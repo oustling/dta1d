@@ -6,31 +6,32 @@
 #include <gtk/gtk.h>
 #include <locale.h>
 
+#include "../config.h"
 
-struct options
+typedef struct
 {
  gdouble dose_difference; //in %
  gdouble dta; // in mm
  GdkRGBA color_1;
  GdkRGBA color_2;
-};
+} options;
 
 options global_options;
 
 
-struct omnipro_dataset
+typedef struct
 {
   guint first_row;
   guint last_row;
-};
+}omnipro_dataset;
 
-struct point
+typedef struct
 {
   gdouble x;
   gdouble dose;
   gdouble result; //filled after comparing two arrays
   gchar* desc; //filled while evaluating an algorithm, for debugging or showing how it works
-};
+} point;
 
 guint monaco_graph_type;
 guint csv_graph_type; // crossline--1 inline--2; undefined--0; depth--3;
@@ -43,6 +44,13 @@ guint csv_graph_type; // crossline--1 inline--2; undefined--0; depth--3;
 //normalization type
 #define NORM_TO_MAX 0
 #define NORM_TO_CENTER 1
+
+//algorithms
+#define SIMPLE_DTA 0
+#define COMPLEX_DTA 1
+#define GAMMA 2
+
+gint algorithm = SIMPLE_DTA;//for now - this should be able to choose in options window
 
 //GtkWidget *data_0;
 //GtkWidget *data_1;
@@ -160,7 +168,7 @@ void get_monaco_row_clicked(  );
 void save_monaco_column_clicked(  );
 void get_monaco_column_clicked(  );
 
-void draw_background( cairo_t *_cr, guint _width, guint _height );
+void draw_background( cairo_t *_cr, guint _width, guint _height, guint _x, guint _y );
 
 static void begin_print( GtkPrintOperation *operation, GtkPrintContext *context, gpointer user_data );
 static void draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_nr, gpointer user_data );
@@ -177,7 +185,7 @@ void color1_changed( GtkColorButton *_widget, gpointer   user_data );
 void color2_changed( GtkColorButton *_widget, gpointer   user_data );
 
 gboolean compare_doses( gdouble _d1, gdouble _d2, gdouble _sensitivity );
-gdouble abs( gdouble );
+gdouble abs1( gdouble );
 gint get_number_of_good_points_in_array( GArray* _g );
 point find_point_in_garray( GArray* _g, gdouble _x, gdouble _s );//we give x value and function
                                                           // returns dose for given x from _g, _s is sensitivity
