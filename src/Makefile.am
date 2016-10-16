@@ -1,9 +1,12 @@
 bin_PROGRAMS = dta1d
 
-AM_CPPFLAGS = $(GTK_CFLAGS)
+#AM_CPPFLAGS = $(GTK_CFLAGS)
+AM_CFLAGS = $(GTK_CFLAGS)
 
-dta1d_SOURCES = project.cpp \
-	        project.h
+OBJEXT = c
+
+dta1d_SOURCES = project.c \
+                project.h
 
 
 dta1d_LDADD   = $(GTK_LIBS)
