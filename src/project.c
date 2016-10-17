@@ -512,6 +512,7 @@ gdouble check_dta(  GArray* _second, point* _p )
   gdouble _x = _p->x;
   gdouble _x2 = _x;
   gdouble _delta_x;
+  gint _i;
 
   GString* _s;
 
@@ -556,6 +557,7 @@ gdouble check_dta(  GArray* _second, point* _p )
   }
   else if( algorithm == COMPLEX_DTA )
   {
+	  point* _pm, _pp;
   // we need to find every point in the_other_array that has the same dose value that checking point has,
   // but there is no exact the same dose points, we have at least the one point that has sligtly less dose value
   // and the next that has sligtly bigger. From those two points we need to calculate x value where dose
@@ -564,6 +566,10 @@ gdouble check_dta(  GArray* _second, point* _p )
   //
   // Next step is to find one closest point and check its distance from the point we are evaluating
   // If the distance is less than dta, checked point meets criteria, otherwise not.
+    for( _i=0; _i<the_other_garray->len; _i++)
+    {
+          
+    }
   }
   /**/  g_string_append_printf( _s, " _delta_x: %2.1fcm ] ", _delta_x, NULL);
   _p->desc = g_strdup_printf("%s", _s->str, NULL );
