@@ -511,8 +511,8 @@ gdouble check_dta(  GArray* _second, point* _p )
   gdouble _first_dose, _second_dose, _diff_0, _diff_m1, _diff_p1 ; //plus 1, minus 1
   gdouble _x = _p->x;
   gdouble _x2 = _x;
-  gdouble _delta_x;
-  gint _i;
+  gdouble _delta_x = 100;
+  gint _i, _j;
 
   GString* _s;
 
@@ -558,7 +558,10 @@ gdouble check_dta(  GArray* _second, point* _p )
   else if( algorithm == COMPLEX_DTA )
   {
 	  point* _pm, _pp;
-  // we need to find every point in the_other_array that has the same dose value that checking point has,
+	  gdouble _temp_x;
+	  point _temp_point;
+	  _temp_garray = NULL;
+  // we need to find every point in _second array that has the same dose value that checking point has,
   // but there is no exact the same dose points, we have at least the one point that has sligtly less dose value
   // and the next that has sligtly bigger. From those two points we need to calculate x value where dose
   // is the same. This values (x, dose) we save in point structure.
@@ -566,10 +569,31 @@ gdouble check_dta(  GArray* _second, point* _p )
   //
   // Next step is to find one closest point and check its distance from the point we are evaluating
   // If the distance is less than dta, checked point meets criteria, otherwise not.
-    for( _i=0; _i<the_other_garray->len; _i++)
+    _temp_garray = g_array_new( TRUE, TRUE, sizeof(point));
+    for( _i=0; _i<the_other_garray->len - 1; _i++)
     {
-          
+          _pm = &g_array_index( _second, point, _i );
+	  _pp = &g_array_index( _second, point, _i+1 );
+	  if( ((_first_dose >= _pm->dose) && (_first_dose < _pp->dose))
+	        || ((_first_dose <= _pm->dose) && (_first_dose > _pp->dose))  )
+	  { // _first_dose is between _pm->dose and _pp->dose
+            // now we have to estimate x
+		  _temp_point.x = ((_pp->x-_pm->x)*(_first_dose-_pm->dose))/(_pp->dose - _pm->dose) + _pm->x; 
+		  //from simple proportion
+		  _temp_point.dose = _first_dose; // ought to be the same
+		  _temp_point.result = 0;
+		  _temp_point.desc = NULL;
+		  g_array_add( _temp_garray, _temp_point );
+	  }
+
+    }//now we need to find the closest from these points
+//    _x2 = 10e10;//big enough
+    for( _i=0; _i<_tmp_garray->len - 1; _i++)
+    {
+	   _x2 = mod1(_x - g_array_index( _tmp_garray, point, _i ).x );
+	   if( _x2 < _delta_x ) _delta_x = _x2;
     }
+    g_array_free( _temp_garray, TRUE );  
   }
   /**/  g_string_append_printf( _s, " _delta_x: %2.1fcm ] ", _delta_x, NULL);
   _p->desc = g_strdup_printf("%s", _s->str, NULL );
