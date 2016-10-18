@@ -532,7 +532,7 @@ gdouble check_dta(  GArray* _second, point* _p )
   } //good
   /**/  g_string_append_printf( _s, " [ ", NULL);
   // otherwise we check the nearest point
-  if( algorithm == SIMPLE_DTA )
+  if( algorithm == ALG_SIMPLE_DTA )
   {
   // in that algorithm we simply go left or right on the garray: the_other_garray, beginning from the place (x)
   // we want to check. We check the difference between dose values. |D1 - D2| If we meet the local minimum 
@@ -556,7 +556,7 @@ gdouble check_dta(  GArray* _second, point* _p )
     }
     _delta_x = abs1( _x - _x2 ); // in cm
   }
-  else if( algorithm == COMPLEX_DTA )
+  else if( algorithm == ALG_COMPLEX_DTA )
   {
 	  point* _pm;
 	  point* _pp;
@@ -591,7 +591,6 @@ gdouble check_dta(  GArray* _second, point* _p )
 	  }
 
     }//now we need to find the closest from these points
-//    _x2 = 10e10;//big enough
     for( _i=0; _i<_temp_garray->len; _i++)
     {
 	   _x2 = abs1(_x - g_array_index( _temp_garray, point, _i ).x );
@@ -776,8 +775,6 @@ void open_omnipro_csv_clicked(  )
       gtk_widget_destroy( _dialog );
       return;
     }
-    gtk_text_buffer_set_text ( omnipro_text_buffer, _contents, -1 );
-
 
     n_of_csv_lines = g_strv_length( csv_splitted );
     n_of_csv_sets = 0;
@@ -1142,7 +1139,8 @@ gint main( gint argc, gchar **argv )
   main_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_default_size( GTK_WINDOW(main_window), 800, 670 );
   gtk_window_set_title (GTK_WINDOW(main_window), "dta1d");
-  gtk_window_set_default_icon_from_file( "icon.png", NULL );
+//  gtk_window_set_default_icon_from_file( "icon.png", NULL );
+  gtk_window_set_icon_name (GTK_WINDOW (main_window), "document-open");
 
   main_box = gtk_box_new( GTK_ORIENTATION_VERTICAL, 4 );//menu + hhpaned
   main_menu_bar = gtk_menu_bar_new();
@@ -1151,7 +1149,7 @@ gint main( gint argc, gchar **argv )
 
   hhbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2); //monaco_vbox + omnipro_vbox + compare_hbox
 
-  monaco_frame = gtk_frame_new("Monaco tools (1): "); //monaco_hbox
+  monaco_frame = gtk_frame_new("Monaco tools (1): "); 
   gtk_container_set_border_width( GTK_CONTAINER(monaco_frame), 2 );
     monaco_vbox_menu = gtk_box_new( GTK_ORIENTATION_VERTICAL, 2 );  //monaco_la_1 + monaco_ed_1 + monaco_la_2 + monaco_ed_2
 
@@ -1187,7 +1185,6 @@ gint main( gint argc, gchar **argv )
       monaco_rb_3 = gtk_radio_button_new_with_label_from_widget ( GTK_RADIO_BUTTON (monaco_rb_1), "YZ plane (PDD)");
 
       monaco_da = gtk_drawing_area_new ();
-      /* set a minimum size */
       gtk_widget_set_size_request (monaco_da, 100, 100);
 
       gtk_box_pack_start( GTK_BOX(monaco_vbox_menu), monaco_la_1, FALSE, FALSE, 0 );
@@ -1201,19 +1198,8 @@ gint main( gint argc, gchar **argv )
       gtk_box_pack_start( GTK_BOX(monaco_vbox_menu), monaco_rb_2, FALSE, FALSE, 0 );
       gtk_box_pack_start( GTK_BOX(monaco_vbox_menu), monaco_rb_3, FALSE, FALSE, 0 );
       gtk_box_pack_start( GTK_BOX(monaco_vbox_menu), monaco_da, FALSE, TRUE, 0 );
-//  gtk_box_pack_start( GTK_BOX(monaco_hbox), monaco_vbox_menu, FALSE, FALSE, 4 );
-
-//  monaco_vbox_2 = gtk_box_new( GTK_ORIENTATION_VERTICAL, 4 );  //monaco_scrolled_window + monaco_diag_frame
-//    monaco_scrolled_window = gtk_scrolled_window_new( NULL, NULL );
-//    monaco_text_buffer = gtk_text_buffer_new( NULL );
-//    monaco_text_view = gtk_text_view_new_with_buffer ( GTK_TEXT_BUFFER(monaco_text_buffer) );
-//    gtk_text_view_set_editable( GTK_TEXT_VIEW(monaco_text_view), FALSE );
-//    gtk_box_pack_start( GTK_BOX(monaco_vbox_2), monaco_scrolled_window, TRUE, TRUE, 0 );
-
-//  gtk_box_pack_start( GTK_BOX(monaco_hbox), monaco_vbox_2, TRUE, TRUE, 4 );
   gtk_container_add( GTK_CONTAINER(monaco_frame), monaco_vbox_menu );
   gtk_box_pack_start( GTK_BOX(hhbox), monaco_frame, FALSE, FALSE, 2 );
-
 
 
   omnipro_frame = gtk_frame_new("Omnipro tools (2): "); //omnipro_hbox
@@ -1241,7 +1227,6 @@ gint main( gint argc, gchar **argv )
 
   gtk_container_add( GTK_CONTAINER(omnipro_frame), omnipro_vbox_menu );
   gtk_box_pack_start( GTK_BOX(hhbox), omnipro_frame, FALSE, FALSE, 2 );
-
 
 
 
@@ -1276,8 +1261,6 @@ gint main( gint argc, gchar **argv )
   gtk_box_pack_start( GTK_BOX(main_hbox), compare_vbox, TRUE, TRUE, 4 );
   gtk_box_pack_start( GTK_BOX(main_box), main_menu_bar, FALSE, FALSE, 0 );
   gtk_box_pack_start( GTK_BOX(main_box), main_hbox, TRUE, TRUE, 0 );
-  gtk_container_add( GTK_CONTAINER(monaco_scrolled_window), monaco_text_view );
-  gtk_container_add( GTK_CONTAINER(omnipro_scrolled_window), omnipro_text_view );
   gtk_container_add( GTK_CONTAINER(main_window), main_box );
    
 
@@ -1305,13 +1288,10 @@ gint main( gint argc, gchar **argv )
     menu_item_open_monaco_plane = gtk_menu_item_new_with_label( "Open Monaco plane file" );
     menu_item_save_monaco_row = gtk_menu_item_new_with_label( "Export given Monaco row" );
     menu_item_save_monaco_column = gtk_menu_item_new_with_label( "Export given Monaco column" );
-//    menu_item_save = gtk_menu_item_new_with_label( "Save" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_open_monaco_plane );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_save_monaco_row );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_save_monaco_column );
-//    gtk_menu_shell_append( GTK_MENU_SHELL( menu_file ), menu_item_save );
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_monaco), menu_monaco );
-  //  gtk_menu_attach_to_widget( GTK_MENU( main_menu ), main_window, NULL );
 
   menu_omnipro = gtk_menu_new();
     menu_item_open_omnipro_csv = gtk_menu_item_new_with_label( "Open Omnipro csv file" );

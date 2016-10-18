@@ -46,14 +46,11 @@ guint csv_graph_type; // crossline--1 inline--2; undefined--0; depth--3;
 #define NORM_TO_CENTER 1
 
 //algorithms
-#define SIMPLE_DTA 0
-#define COMPLEX_DTA 1
-#define GAMMA 2
+#define ALG_SIMPLE_DTA 0
+#define ALG_COMPLEX_DTA 1
+#define ALG_GAMMA 2
 
-gint algorithm = COMPLEX_DTA;//for now - this should be able to choose in options window
-
-//GtkWidget *data_0;
-//GtkWidget *data_1;
+gint algorithm = ALG_COMPLEX_DTA;//for now - this should be able to choose in options window
 
 GtkWidget *main_window;
 GtkWidget *main_box; //menu + main_hbox
@@ -85,11 +82,7 @@ GtkWidget *hhbox;
 GtkWidget *monaco_da;
 
 GtkWidget *monaco_frame;
-GtkWidget *monaco_hbox;
-//GtkWidget *monaco_vbox;
 GtkWidget *monaco_vbox_menu;
-GtkWidget *monaco_vbox_2;
-//GtkWidget *monaco_diag_frame;
 
 GtkWidget *monaco_la_1;
 GtkWidget *monaco_ed1_hbox;
@@ -107,16 +100,9 @@ GtkWidget *monaco_rb_2;
 GtkWidget *monaco_rb_3;
 
 
-GtkWidget *monaco_scrolled_window;
-GtkTextBuffer *monaco_text_buffer;
-GtkWidget *monaco_text_view;
-
 GtkWidget *omnipro_frame;
 GtkWidget *omnipro_hbox;
-//GtkWidget *omnipro_vbox;
 GtkWidget *omnipro_vbox_menu;
-//GtkWidget *omnipro_diag_frame;
-
 
 GtkWidget *omnipro_la_1;
 GtkWidget *omnipro_combo_box_text;
@@ -125,9 +111,6 @@ GtkWidget *omnipro_la_2;
 GtkWidget *omnipro_la_3;
 GtkWidget *omnipro_la_4;
 
-GtkWidget *omnipro_scrolled_window;
-GtkTextBuffer *omnipro_text_buffer;
-GtkWidget *omnipro_text_view;
 GtkWidget *omnipro_da;
 
 GtkWidget *compare_vbox; //compare_hbox + compare_da

@@ -39,7 +39,7 @@ void open_monaco_plane_clicked(  )
   {
      _filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (_dialog));
      g_file_get_contents( (const gchar*) _filename, &_contents, _length, NULL );
-     gtk_text_buffer_set_text ( monaco_text_buffer, _contents, -1 );
+     //gtk_text_buffer_set_text ( monaco_text_buffer, _contents, -1 );
    
     lines_splitted = g_strsplit ( _contents, "\n", G_MAXINT );
 
