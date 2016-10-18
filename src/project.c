@@ -1079,7 +1079,6 @@ void compare_button_clicked(  )
   { 
     _point = g_array_index( checked_garray_trimmed, point, _i );
     _temp_delta = check_dta( the_other_garray, &g_array_index( checked_garray_trimmed, point, _i ) );
-  printf(" delta: %2.0f\n", _temp_delta, NULL);
     g_array_index( checked_garray_trimmed, point, _i ).result = _temp_delta;
     if( _temp_delta == -1 ){ msg("Something went wrong while dta calculations.\n"); break; }
   }
