@@ -50,7 +50,7 @@ guint csv_graph_type; // crossline--1 inline--2; undefined--0; depth--3;
 #define COMPLEX_DTA 1
 #define GAMMA 2
 
-gint algorithm = SIMPLE_DTA;//for now - this should be able to choose in options window
+gint algorithm = COMPLEX_DTA;//for now - this should be able to choose in options window
 
 //GtkWidget *data_0;
 //GtkWidget *data_1;

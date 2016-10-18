@@ -515,6 +515,7 @@ gdouble check_dta(  GArray* _second, point* _p )
   gint _i, _j;
 
   GString* _s;
+  GArray* _temp_garray; 
 
   _first_dose = find_point_in_garray( checked_garray_trimmed, _x, 0.5*get_step_of_garray( checked_garray_trimmed ) ).dose;
   _second_dose = find_point_in_garray( _second, _x, 0.5*get_step_of_garray( _second ) ).dose;
@@ -557,7 +558,8 @@ gdouble check_dta(  GArray* _second, point* _p )
   }
   else if( algorithm == COMPLEX_DTA )
   {
-	  point* _pm, _pp;
+	  point* _pm;
+	  point* _pp;
 	  gdouble _temp_x;
 	  point _temp_point;
 	  _temp_garray = NULL;
@@ -573,7 +575,9 @@ gdouble check_dta(  GArray* _second, point* _p )
     for( _i=0; _i<the_other_garray->len - 1; _i++)
     {
           _pm = &g_array_index( _second, point, _i );
+
 	  _pp = &g_array_index( _second, point, _i+1 );
+
 	  if( ((_first_dose >= _pm->dose) && (_first_dose < _pp->dose))
 	        || ((_first_dose <= _pm->dose) && (_first_dose > _pp->dose))  )
 	  { // _first_dose is between _pm->dose and _pp->dose
@@ -583,14 +587,14 @@ gdouble check_dta(  GArray* _second, point* _p )
 		  _temp_point.dose = _first_dose; // ought to be the same
 		  _temp_point.result = 0;
 		  _temp_point.desc = NULL;
-		  g_array_add( _temp_garray, _temp_point );
+		  g_array_append_val( _temp_garray, _temp_point );
 	  }
 
     }//now we need to find the closest from these points
 //    _x2 = 10e10;//big enough
-    for( _i=0; _i<_tmp_garray->len - 1; _i++)
+    for( _i=0; _i<_temp_garray->len; _i++)
     {
-	   _x2 = mod1(_x - g_array_index( _tmp_garray, point, _i ).x );
+	   _x2 = abs1(_x - g_array_index( _temp_garray, point, _i ).x );
 	   if( _x2 < _delta_x ) _delta_x = _x2;
     }
     g_array_free( _temp_garray, TRUE );  
