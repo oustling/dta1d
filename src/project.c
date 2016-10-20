@@ -89,11 +89,6 @@ static void begin_print (GtkPrintOperation *operation,
              GtkPrintContext   *context,
              gpointer           user_data)
 {
-//  int i;
-//  double height;
-
-//  height = gtk_print_context_get_height( context ) - 45;
-
   gtk_print_operation_set_n_pages (operation, 1);
 }
 
@@ -628,40 +623,38 @@ gdouble get_step_of_garray( GArray* _g )
 //-------------------------------------------------------------------//
 // Function changes values in garray according to specified normalization 
 //-------------------------------------------------------------------//
-gdouble normalize_garray( GArray* _g, guint _gt, guint _norm_type )
+gdouble normalize_graph( graph _g, guint _norm_type )
 {
   guint _i;
   gdouble _temp = 0;
   gdouble _temp2 = 0;
   point _point, _point_2;
 
-  if( _gt == GT_DEPTH)
+  if( _g.type == GT_DEPTH)
   {
-    for(_i=0; _i<_g->len; _i++) if( g_array_index( _g, point, _i ).dose > _temp )
-                                   _temp = g_array_index( _g, point, _i ).dose;
+    for(_i=0; _i<_g.g->len; _i++) if( g_array_index( _g.g, point, _i ).dose > _temp )
+                                   _temp = g_array_index( _g.g, point, _i ).dose;
   }
-  if( (_gt == GT_CROSSLINE) || (_gt == GT_INLINE) )
+  if( (_g.type == GT_CROSSLINE) || (_g.type == GT_INLINE) )
   {
-    if( _g->len / 2 != _g->len * 0.5 )
+    if( _g.g->len % 2 == 1 )
     {
-      _point = g_array_index( _g, point, (guint)(_g->len * 0.5 + 0.5) );
+      _point = g_array_index( _g.g, point, (guint)(_g.g->len * 0.5 + 0.5) );
       _temp = _point.dose;
-      printf ("Odd v1: %u v2: %f index: %d val: %f\n", _g->len / 2, _g->len *0.5, (guint)(_g->len * 0.5 + 0.5), _temp, NULL );
     } 
     else 
     {
-      _point = g_array_index( _g, point, (guint)(_g->len * 0.5) );
-      _point_2 = g_array_index( _g, point, (guint)(_g->len * 0.5 + 1) );
+      _point = g_array_index( _g.g, point, (guint)(_g.g->len * 0.5) );
+      _point_2 = g_array_index( _g.g, point, (guint)(_g.g->len * 0.5 + 1) );
       _temp = ( _point.dose + _point_2.dose ) * 0.5;
-      printf ("Even v1: %u v2: %f index: %f val: %f\n", _g->len / 2, _g->len *0.5, _g->len * 0.5, _temp, NULL );
     }
   }
  
   _temp2 = 100/_temp;
 
-  for(_i=0;_i<_g->len;_i++)
+  for(_i=0;_i<_g.g->len;_i++)
   {
-    g_array_index( _g, point, _i ).dose = g_array_index( _g, point, _i ).dose*_temp2;
+    g_array_index( _g.g, point, _i ).dose = g_array_index( _g.g, point, _i ).dose*_temp2;
   }
   return _temp;
 }
@@ -828,18 +821,17 @@ void open_omnipro_csv_clicked(  )
     return;
   }
 
-
-
 }
 // end of open_omnipro_csv_clicked
 
+//-------------------------------------------------------------------//
+// Function operates on csv_splitted array, is should be set first
+// and creates omnipro_garray filled with point structures.
+//-------------------------------------------------------------------//
 void get_omnipro_dataset_clicked()
 {
   GString *_temp_text = NULL;
   guint64 _n_of_rows;
-
-  GFile *_opening_file = NULL;
-  GFileInputStream *_file_input = NULL;
 
   guint64 _i, _n_of_columns, _n_series;
   gchar **_line_splitted = NULL;
@@ -854,46 +846,46 @@ void get_omnipro_dataset_clicked()
   
   if( _temp_text->len > 3 )
   {
-    csv_graph_type = GT_UNDEFINED;
+//    csv_graph_type = GT_UNDEFINED;
     _line_splitted = g_strsplit( _temp_text->str, ".", -1 );
     _n_series = g_ascii_strtoull( _line_splitted[0], NULL, 10 );
-    if( g_strrstr( _temp_text->str, "Crossline" ) != NULL )csv_graph_type = GT_CROSSLINE;
-    if( g_strrstr( _temp_text->str, "Inline" ) != NULL )csv_graph_type = GT_INLINE;
-    if( g_strrstr( _temp_text->str, "Depth Dose" ) != NULL )csv_graph_type = GT_DEPTH;
+    if( g_strrstr( _temp_text->str, "Crossline" ) != NULL )omnipro_graph.type = GT_CROSSLINE;
+    if( g_strrstr( _temp_text->str, "Inline" ) != NULL )omnipro_graph.type = GT_INLINE;
+    if( g_strrstr( _temp_text->str, "Depth Dose" ) != NULL )omnipro_graph.type = GT_DEPTH;
     g_strfreev( _line_splitted );
     // now is time to get appropriate data
-    if( csv_graph_type == GT_UNDEFINED)
+    if( omnipro_graph.type == GT_UNDEFINED)
     {
       msg("Something is wrong with the type of dataset.\nIt is neither inline, crossline or depth dose.");
       g_string_free( _temp_text, TRUE );
       return;
     }    
     _set = g_array_index( omnipro_sets_garray, omnipro_dataset, _n_series-1 );
-    g_array_set_size ( omnipro_points_garray, 0 ); 
+    g_array_set_size ( omnipro_graph.g, 0 ); 
 
     for( _i=_set.first_row; _i<=_set.last_row; _i++ )
     {
       _line_splitted = g_strsplit( csv_splitted[_i-1], ",", -1 );
-      _temp_point.x = g_ascii_strtod ( _line_splitted[csv_graph_type], NULL );
+      _temp_point.x = g_ascii_strtod ( _line_splitted[omnipro_graph.type], NULL );
       _temp_point.dose = g_ascii_strtod ( _line_splitted[4], NULL );
 
-      g_array_append_val( omnipro_points_garray, _temp_point );
+      g_array_append_val( omnipro_graph.g, _temp_point );
     }
     g_string_printf ( _temp_text, "Currently loaded set: %" G_GUINT64_FORMAT ,_n_series );
     gtk_label_set_text( GTK_LABEL(omnipro_la_2), _temp_text->str );
-    g_string_printf ( _temp_text, "N of points in set: %d", omnipro_points_garray->len );
+    g_string_printf ( _temp_text, "N of points in set: %d", omnipro_graph.g->len );
     gtk_label_set_text( GTK_LABEL(omnipro_la_3), _temp_text->str );
-    g_string_printf ( _temp_text, "Step: %.3f", get_step_of_garray(omnipro_points_garray) );
+    g_string_printf ( _temp_text, "Step: %.3f", get_step_of_garray(omnipro_graph.g) );
     gtk_label_set_text( GTK_LABEL(omnipro_la_4), _temp_text->str );
   }
 
-  if((csv_graph_type==GT_CROSSLINE) || (csv_graph_type == GT_INLINE)) //we have xy column
+  if((omnipro_graph.type==GT_CROSSLINE) || (omnipro_graph.type == GT_INLINE)) //we have xy column
   {
-    normalize_garray( omnipro_points_garray, GT_CROSSLINE, NORM_TO_CENTER );
+    normalize_graph( omnipro_graph, NORM_TO_CENTER );
   }
-  else if( (csv_graph_type==GT_DEPTH) ) //we are in some depth plane - column is depth dose
+  else if( (omnipro_graph.type==GT_DEPTH) ) //we are in some depth plane - column is depth dose
   {
-    normalize_garray( omnipro_points_garray, GT_DEPTH, NORM_TO_MAX );
+    normalize_graph( omnipro_graph, NORM_TO_MAX );
   }
 
   g_string_free( _temp_text, TRUE );
@@ -907,8 +899,8 @@ void get_omnipro_dataset_clicked()
 void main_quit()
 {
   if( lines_splitted)  g_strfreev( lines_splitted );
-  g_array_free ( monaco_garray, TRUE );
-  g_array_free ( omnipro_points_garray, TRUE );
+  g_array_free ( monaco_graph.g, TRUE );
+  g_array_free ( omnipro_graph.g, TRUE );
   g_array_free ( checked_garray_trimmed, TRUE );
 //?  g_array_free ( the_other_garray, TRUE );
   gtk_main_quit();
@@ -1005,16 +997,16 @@ void draw_garray( GArray* _g, GArray* _g2, guint _w, guint _h, guint _x, guint _
 
 void monaco_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
 {
-  draw_garray( monaco_garray, NULL, gtk_widget_get_allocated_width (_widget),
+  draw_garray( monaco_graph.g, NULL, gtk_widget_get_allocated_width (_widget),
                                     gtk_widget_get_allocated_height (_widget),
                                     0, 0, _cr, FALSE );
 }
 
 void omnipro_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
 {
-  draw_garray( omnipro_points_garray, NULL, gtk_widget_get_allocated_width (_widget),
-                                            gtk_widget_get_allocated_height (_widget),
-                                            0, 0, _cr, FALSE );
+  draw_garray( omnipro_graph.g, NULL, gtk_widget_get_allocated_width (_widget),
+                                      gtk_widget_get_allocated_height (_widget),
+                                      0, 0, _cr, FALSE );
 }
 
 void compare_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
@@ -1027,45 +1019,45 @@ void compare_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
 
 void compare_button_clicked(  )
 {
-  if ( omnipro_points_garray == NULL ) {msg("No omnipro data loaded");return;} 
-  if ( omnipro_points_garray->len == 0 ) {msg("No omnipro data loaded");return;}
-  if ( monaco_garray == NULL ) {msg("No monaco data loaded");return;} 
-  if ( monaco_garray->len == 0 ) {msg("No monaco data loaded");return;}
+  if ( omnipro_graph.g == NULL ) {msg("No omnipro data loaded");return;} 
+  if ( omnipro_graph.g->len == 0 ) {msg("No omnipro data loaded");return;}
+  if ( monaco_graph.g == NULL ) {msg("No monaco data loaded");return;} 
+  if ( monaco_graph.g->len == 0 ) {msg("No monaco data loaded");return;}
    
   if( !( (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(monaco_rb_1)) &&
-                     ((csv_graph_type == GT_CROSSLINE) || (csv_graph_type == GT_INLINE)) )
+                     ((omnipro_graph.type == GT_CROSSLINE) || (omnipro_graph.type == GT_INLINE)) )
           ||( ( gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(monaco_rb_2)) || gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(monaco_rb_3)) ) &&
-              (csv_graph_type == GT_DEPTH)) ) ){msg("Cannot compare different types of data");return;};
+              (omnipro_graph.type == GT_DEPTH)) ) ){msg("Cannot compare different types of data");return;};
   
-  if( abs1((get_step_of_garray(monaco_garray) / get_step_of_garray(omnipro_points_garray)) - 1.0) >= 0.001 )
+  if( abs1((get_step_of_garray(monaco_graph.g) / get_step_of_garray(omnipro_graph.g)) - 1.0) >= 0.001 )
              {msg("For now step size of each array should be the same.\nThis will be changed in the future.");return;}
 
-  gdouble _step = MIN( get_step_of_garray(monaco_garray), get_step_of_garray(omnipro_points_garray) );
+  gdouble _step = MIN( get_step_of_garray(monaco_graph.g), get_step_of_garray(omnipro_graph.g) );
   if( _step == 0 ) {msg("Something is wrong with the step of an array.");return;}
   guint _i;
-  gdouble _new_garray_min = MAX( min_x_from_garray( monaco_garray ),
-                                 min_x_from_garray( omnipro_points_garray ) );
-  gdouble _new_garray_max = MIN( max_x_from_garray( monaco_garray ),
-                                 max_x_from_garray( omnipro_points_garray ) );
+  gdouble _new_garray_min = MAX( min_x_from_garray( monaco_graph.g ),
+                                 min_x_from_garray( omnipro_graph.g ) );
+  gdouble _new_garray_max = MIN( max_x_from_garray( monaco_graph.g ),
+                                 max_x_from_garray( omnipro_graph.g ) );
   guint _n_of_points = ( _new_garray_max - _new_garray_min ) * 10;
   gdouble _temp_delta;
 
   point _point;
 
   g_array_set_size ( checked_garray_trimmed, 0 );
-  GArray* _delta_garray = g_array_new(FALSE, FALSE, sizeof (point));
+//  GArray* _delta_garray = g_array_new(FALSE, FALSE, sizeof (point));
   GArray* _tested_garray;
 
   // do we want to check 1vs2 or 2vs1 ?
   if( gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(compare_rb_1)) )
   {
-    _tested_garray = monaco_garray;
-    the_other_garray = omnipro_points_garray;
+    _tested_garray = monaco_graph.g;
+    the_other_garray = omnipro_graph.g;
   }
   else
   {
-    _tested_garray = omnipro_points_garray;
-    the_other_garray = monaco_garray;
+    _tested_garray = omnipro_graph.g;
+    the_other_garray = monaco_graph.g;
   }
 
   for( _i=0; _i<=_n_of_points; _i++ )
@@ -1083,7 +1075,7 @@ void compare_button_clicked(  )
     if( _temp_delta == -1 ){ msg("Something went wrong while dta calculations.\n"); break; }
   }
   gtk_widget_queue_draw ( compare_da );
-  g_array_free ( _delta_garray, TRUE );
+//  g_array_free ( _delta_garray, TRUE );
 }
 
 gboolean compare_doses( gdouble _d1, gdouble _d2, gdouble _sensitivity )
@@ -1125,8 +1117,11 @@ gint main( gint argc, gchar **argv )
   gtk_disable_setlocale();
   gtk_init( &argc, &argv ); // initializes locale again if not disabled before
 
-  monaco_garray = g_array_new (TRUE, TRUE, sizeof (point));
-  omnipro_points_garray = g_array_new (TRUE, TRUE, sizeof (point));
+  monaco_graph.g = g_array_new (TRUE, TRUE, sizeof (point));
+  monaco_graph.type = GT_UNDEFINED;
+  omnipro_graph.g = g_array_new (TRUE, TRUE, sizeof (point));
+  omnipro_graph.type = GT_UNDEFINED;
+
   omnipro_sets_garray = g_array_new (TRUE, TRUE, sizeof (omnipro_dataset));
   checked_garray_trimmed = g_array_new(TRUE, TRUE, sizeof (point));
   the_other_garray = g_array_new(TRUE, TRUE, sizeof (point));

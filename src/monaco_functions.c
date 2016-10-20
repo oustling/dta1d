@@ -79,7 +79,7 @@ void open_monaco_plane_clicked(  )
     g_string_printf ( _temp_text, "%" G_GUINT64_FORMAT, monaco_column_val, NULL);
     gtk_entry_set_text( GTK_ENTRY(monaco_ed_2), _temp_text->str );
 
-    g_array_set_size( monaco_garray, 0 );
+    g_array_set_size( monaco_graph.g, 0 );
     gtk_widget_queue_draw ( monaco_da );
 
     g_string_free( _temp_text, TRUE );
@@ -115,9 +115,9 @@ void save_monaco_row_clicked(  )
 
   get_monaco_row_clicked();
 
-  for( _i=0; _i < monaco_garray->len; _i++ )
+  for( _i=0; _i < monaco_graph.g->len; _i++ )
   {
-    g_string_append_printf ( _temp_text, "%" G_GUINT64_FORMAT ", %5.5f\n", _i+1, (g_array_index(monaco_garray,point,_i)).dose, NULL);
+    g_string_append_printf ( _temp_text, "%" G_GUINT64_FORMAT ", %5.5f\n", _i+1, (g_array_index(monaco_graph.g,point,_i)).dose, NULL);
   }
 
 
@@ -190,7 +190,7 @@ void get_monaco_row_clicked(  ) // get row given as y
   _line_needed_splitted = g_strsplit ( lines_splitted[monaco_row_val+15], ",", G_MAXINT );
   _n_of_pts = g_strv_length( _line_needed_splitted );
 
-  g_array_set_size ( monaco_garray, 0 );
+  g_array_set_size ( monaco_graph.g, 0 );
 
 
   _x = -((n_of_x - 1)*0.05); // beggining of x axis in cm (not mm)
@@ -199,10 +199,14 @@ void get_monaco_row_clicked(  ) // get row given as y
     _dose = g_ascii_strtod ( _line_needed_splitted[_i], NULL );
     _point.x = _x + monaco_step*0.1 * _i; //in cm
     _point.dose = _dose;
-    g_array_append_val( monaco_garray, _point );
+    g_array_append_val( monaco_graph.g, _point );
   }
 
-  normalize_garray( monaco_garray, GT_CROSSLINE, NORM_TO_CENTER );
+  if( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(monaco_rb_1)) )monaco_graph.type = GT_CROSSLINE;//row is cross
+  else if( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(monaco_rb_2)) )monaco_graph.type = GT_DEPTH;
+  else if( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(monaco_rb_3)) )monaco_graph.type = GT_DEPTH;
+
+  normalize_graph( monaco_graph, NORM_TO_CENTER );
 
   g_strfreev( _line_needed_splitted );
 
@@ -210,7 +214,7 @@ void get_monaco_row_clicked(  ) // get row given as y
   gtk_label_set_text( GTK_LABEL(monaco_la_3), _temp_text->str );
   g_string_printf ( _temp_text, "N of points: %" G_GUINT64_FORMAT, _n_of_pts );
   gtk_label_set_text( GTK_LABEL(monaco_la_4), _temp_text->str );
-  g_string_printf ( _temp_text, "Step: %.3f", get_step_of_garray(monaco_garray) );
+  g_string_printf ( _temp_text, "Step: %.3f", get_step_of_garray(monaco_graph.g) );
   gtk_label_set_text( GTK_LABEL(monaco_la_5), _temp_text->str );
 
   g_string_free( _temp_text, TRUE );
@@ -238,9 +242,9 @@ void save_monaco_column_clicked(  )
 
   get_monaco_column_clicked();
 
-  for( _i=0; _i < monaco_garray->len; _i++ )
+  for( _i=0; _i < monaco_graph.g->len; _i++ )
   {
-    g_string_append_printf ( _temp_text, "%" G_GUINT64_FORMAT ", %.1f\n", _i+1, (g_array_index(monaco_garray,point,_i)).dose, NULL);
+    g_string_append_printf ( _temp_text, "%" G_GUINT64_FORMAT ", %.1f\n", _i+1, (g_array_index(monaco_graph.g,point,_i)).dose, NULL);
   }
 
   _dialog = gtk_file_chooser_dialog_new ("Choose file to open",
@@ -310,7 +314,7 @@ void get_monaco_column_clicked()
     return;
   }
 
-  g_array_set_size ( monaco_garray, 0 );
+  g_array_set_size ( monaco_graph.g, 0 );
 
   if(gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(monaco_rb_1))) //we have xy column
   {
@@ -327,27 +331,30 @@ void get_monaco_column_clicked()
       _dose = g_ascii_strtod ( _line_needed_splitted[monaco_column_val-1], NULL );
       _point.x = _x + monaco_step*0.1 * _i;//in cm
       _point.dose = _dose;
-      g_array_append_val( monaco_garray, _point );
+      g_array_append_val( monaco_graph.g, _point );
 
       g_strfreev( _line_needed_splitted );
       _line_needed_splitted = NULL;
   }
 
+  if( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(monaco_rb_1)) )monaco_graph.type = GT_CROSSLINE;//row is cross
+  else if( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(monaco_rb_2)) )monaco_graph.type = GT_DEPTH;
+  else if( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(monaco_rb_3)) )monaco_graph.type = GT_DEPTH;
 
   if(gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(monaco_rb_1))) //we have xy column
   {
-    normalize_garray( monaco_garray, GT_CROSSLINE, NORM_TO_CENTER );
+    normalize_graph( monaco_graph, NORM_TO_CENTER );
   }
   else //we are in some depth plane - column is depth dose
   {
-    normalize_garray( monaco_garray, GT_DEPTH, NORM_TO_MAX );
+    normalize_graph( monaco_graph, NORM_TO_MAX );
   }
 
   g_string_printf ( _temp_text, "Currently loaded: %" G_GUINT64_FORMAT ". column", monaco_column_val );
   gtk_label_set_text( GTK_LABEL(monaco_la_3), _temp_text->str );
-  g_string_printf ( _temp_text, "N of points: %d", monaco_garray->len );
+  g_string_printf ( _temp_text, "N of points: %d", monaco_graph.g->len );
   gtk_label_set_text( GTK_LABEL(monaco_la_4), _temp_text->str );
-  g_string_printf ( _temp_text, "Step: %.3f", get_step_of_garray(monaco_garray) );
+  g_string_printf ( _temp_text, "Step: %.3f", get_step_of_garray(monaco_graph.g) );
   gtk_label_set_text( GTK_LABEL(monaco_la_5), _temp_text->str );
   g_string_free( _temp_text, TRUE );
 

@@ -33,8 +33,15 @@ typedef struct
   gchar* desc; //filled while evaluating an algorithm, for debugging or showing how it works
 } point;
 
-guint monaco_graph_type;
-guint csv_graph_type; // crossline--1 inline--2; undefined--0; depth--3;
+typedef struct
+{
+  GArray* g;
+  guint type;
+} graph;
+
+//guint monaco_graph_type;
+//guint csv_graph_type; // crossline--1 inline--2; undefined--0; depth--3;
+
 //graph type
 #define  GT_UNDEFINED 0
 #define  GT_CROSSLINE 1
@@ -135,9 +142,13 @@ guint n_of_lines;
 guint n_of_csv_lines;
 guint n_of_csv_sets;
 
+// global graphs
+graph monaco_graph;
+graph omnipro_graph;
+
 // Arrays with point structures (most of them)
-GArray *monaco_garray = NULL; 
-GArray *omnipro_points_garray = NULL; // with points
+//GArray *monaco_garray = NULL; 
+//GArray *omnipro_points_garray = NULL; // with points
 GArray *omnipro_sets_garray = NULL; // with omnipro_datasets
 GArray *checked_garray_trimmed = NULL; // this it the array we want to compare, filled with points
 GArray *the_other_garray = NULL; // this is the array we want to compare to, filled with points
@@ -176,7 +187,7 @@ gdouble check_dta( GArray* , point* ); //we check the point
                                                    //from _checked_garray_trimmed against _second garray points,
                                                    //according to defined agreements
 gdouble get_step_of_garray( GArray* );
-gdouble normalize_garray(  GArray*, guint _graph_type, guint _norm_type );
+gdouble normalize_graph(  graph, guint _norm_type );
 gdouble max_x_from_garray( GArray* );
 gdouble min_x_from_garray( GArray* );
 static void msg( const gchar * );
