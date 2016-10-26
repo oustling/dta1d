@@ -77,34 +77,38 @@ GtkWidget *menu_item_exit;
 
 GtkWidget *menu_monaco;
 GtkWidget *menu_item_open_monaco_plane;
-GtkWidget *menu_item_save_monaco_row;
-GtkWidget *menu_item_save_monaco_column;
+GtkWidget *menu_item_save_monaco_graph;
+//GtkWidget *menu_item_save_monaco_column;
+GtkWidget *menu_item_open_omnipro_imrt_plane;
 
 GtkWidget *menu_omnipro;
-GtkWidget *menu_item_open_omnipro_csv;
+GtkWidget *menu_item_open_omnipro_accept;
 //end of menu
 
 GtkWidget *hhbox;
 
-GtkWidget *monaco_da;
 
 GtkWidget *monaco_frame;
 GtkWidget *monaco_vbox_menu;
 
-GtkWidget *monaco_la_1;
-GtkWidget *monaco_ed1_hbox;
-GtkWidget *monaco_ed_1;
-GtkWidget *monaco_bu_1;
-GtkWidget *monaco_la_2;
-GtkWidget *monaco_ed2_hbox;
-GtkWidget *monaco_ed_2;
-GtkWidget *monaco_bu_2;
+
+GtkWidget *m_2d_box;
+  GtkWidget *m_2d_la;
+  GtkWidget *m_2d_da;
+GtkWidget *m_grid;
+  GtkWidget *monaco_la_1;
+  GtkWidget *monaco_ed_1;
+  GtkWidget *monaco_bu_1;
+  GtkWidget *monaco_la_2;
+  GtkWidget *monaco_ed_2;
+  GtkWidget *monaco_bu_2;
 GtkWidget *monaco_la_3;
 GtkWidget *monaco_la_4;
 GtkWidget *monaco_la_5;
 GtkWidget *monaco_rb_1;
 GtkWidget *monaco_rb_2;
 GtkWidget *monaco_rb_3;
+GtkWidget *monaco_da;
 
 
 GtkWidget *omnipro_frame;
@@ -132,9 +136,10 @@ GtkWidget *msg_label;
 
 guint64 n_of_x, n_of_y;
 guint64 monaco_row_val, monaco_column_val;
-gdouble monaco_step = 0;
+gdouble monaco_step = 0; // in cm
 gdouble omnipro_step = 0;
 
+gdouble* plane = NULL; //table is organized as text in the book (don't have any better idea about it)
 gchar **lines_splitted = NULL;
 gchar **csv_splitted = NULL;
 
@@ -155,12 +160,12 @@ GArray *the_other_garray = NULL; // this is the array we want to compare to, fil
 
 // FUNCTIONS //
 
-/* Monaco manipulating functions defined in monaco_functions.c */
+/* 2D manipulating functions defined in monaco_functions.c */
 void open_monaco_plane_clicked(  );
-void save_monaco_row_clicked(  );
+void save_monaco_graph_clicked(  );
 void get_monaco_row_clicked(  );
-void save_monaco_column_clicked(  );
 void get_monaco_column_clicked(  );
+void open_omnipro_imrt_plane_clicked(  );
 
 void draw_background( cairo_t *_cr, guint _width, guint _height, guint _x, guint _y );
 
@@ -194,7 +199,7 @@ static void msg( const gchar * );
 gboolean is_it_number( const gchar * );
 void draw_garray( GArray*, GArray*, guint, guint, guint, guint, cairo_t*, gboolean );
 
-void open_omnipro_csv_clicked(  );
+void open_omnipro_accept_clicked(  );
 void get_omnipro_dataset_clicked(  );
 void compare_button_clicked(  );
 

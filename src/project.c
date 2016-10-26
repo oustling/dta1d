@@ -60,6 +60,7 @@ void draw_background( cairo_t *_cr, guint _width, guint _height, guint _x, guint
   cairo_line_to ( _cr, _width *0.9 + _x, _height *0.9 + _y);
 
   gdk_rgba_parse (&_color,"black");
+  cairo_set_line_width( _cr, 0.7 );
   gdk_cairo_set_source_rgba (_cr, &_color);
 
   cairo_stroke ( _cr );
@@ -723,7 +724,7 @@ guint get_number_of_rows( GtkTreeView* _t )
 }
 
 
-void open_omnipro_csv_clicked(  )
+void open_omnipro_accept_clicked(  )
 {
   GtkWidget *_dialog;
   gchar *_filename = NULL;
@@ -903,6 +904,7 @@ void main_quit()
   g_array_free ( omnipro_graph.g, TRUE );
   g_array_free ( checked_garray_trimmed, TRUE );
 //?  g_array_free ( the_other_garray, TRUE );
+  if(plane) g_free(plane);
   gtk_main_quit();
 }
 
@@ -994,6 +996,34 @@ void draw_garray( GArray* _g, GArray* _g2, guint _w, guint _h, guint _x, guint _
   }
   g_string_free( _temp_text , TRUE );
 }
+
+void m_2d_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
+{
+  GdkRGBA _color;
+  gint _width  = gtk_widget_get_allocated_width (_widget);
+  gint _height = gtk_widget_get_allocated_height (_widget);
+
+  // background
+  cairo_rectangle ( _cr, _width * 0.05, _height * 0.05, _width * 0.9, _height * 0.9 );
+  gdk_rgba_parse (&_color,"white");
+  gdk_cairo_set_source_rgba (_cr, &_color);
+  cairo_fill( _cr );
+
+  //axis
+  cairo_move_to ( _cr, _width *0.5, _height *0.9 );
+  cairo_line_to ( _cr, _width *0.5, _height *0.1 );
+
+  cairo_move_to ( _cr, _width *0.1, _height *0.5 );
+  cairo_line_to ( _cr, _width *0.9, _height *0.5 );
+
+  gdk_rgba_parse (&_color,"black");
+  cairo_set_line_width( _cr, 0.7 );
+  gdk_cairo_set_source_rgba (_cr, &_color);
+  cairo_stroke ( _cr );
+  
+
+}
+
 
 void monaco_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
 {
@@ -1143,32 +1173,41 @@ gint main( gint argc, gchar **argv )
 
   hhbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2); //monaco_vbox + omnipro_vbox + compare_hbox
 
-  monaco_frame = gtk_frame_new("Monaco tools (1): "); 
+  monaco_frame = gtk_frame_new("Two dimmentional plane: "); 
   gtk_container_set_border_width( GTK_CONTAINER(monaco_frame), 2 );
-    monaco_vbox_menu = gtk_box_new( GTK_ORIENTATION_VERTICAL, 2 );  //monaco_la_1 + monaco_ed_1 + monaco_la_2 + monaco_ed_2
-
-      monaco_la_1 = gtk_label_new ("Row to export:");
-      monaco_ed1_hbox = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 2 );
+    monaco_vbox_menu = gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 );  //monaco_la_1 + monaco_ed_1 + monaco_la_2 + monaco_ed_2
+      m_2d_box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+        m_2d_la = gtk_label_new ("2d view:");
+        m_2d_da = gtk_drawing_area_new ();
+        gtk_widget_set_size_request (m_2d_da, 100, 100);
+      gtk_box_pack_start( GTK_BOX(m_2d_box), m_2d_la, FALSE, FALSE, 0 );
+      gtk_box_pack_start( GTK_BOX(m_2d_box), m_2d_da, FALSE, FALSE, 0 );
+      m_grid = gtk_grid_new();
+      gtk_grid_insert_row( GTK_GRID(m_grid),1 );
+      gtk_grid_insert_column( GTK_GRID(m_grid),1 );
+      gtk_grid_insert_column( GTK_GRID(m_grid),2 );
+        monaco_la_1 = gtk_label_new ("Row to export/get:");
         monaco_ed_1 = gtk_entry_new ();
-        gtk_entry_set_max_length (GTK_ENTRY(monaco_ed_1), 6);
-        gtk_entry_set_max_width_chars (GTK_ENTRY(monaco_ed_1), 6);
-        gtk_entry_set_width_chars (GTK_ENTRY(monaco_ed_1), 6);
+        gtk_entry_set_max_length (GTK_ENTRY(monaco_ed_1), 5);
+        gtk_entry_set_max_width_chars (GTK_ENTRY(monaco_ed_1), 5);
+        gtk_entry_set_width_chars (GTK_ENTRY(monaco_ed_1), 5);
 
-        monaco_bu_1 = gtk_button_new_with_label("Get this row");
+        monaco_bu_1 = gtk_button_new_with_label("Get it");
         g_signal_connect( monaco_bu_1, "clicked", G_CALLBACK( get_monaco_row_clicked ), NULL ); 
-      gtk_box_pack_start( GTK_BOX(monaco_ed1_hbox), monaco_ed_1, FALSE, FALSE, 0 );
-      gtk_box_pack_start( GTK_BOX(monaco_ed1_hbox), monaco_bu_1, FALSE, FALSE, 0 );
+       gtk_grid_attach (GTK_GRID(m_grid), monaco_la_1, 0,0, 1,1 );
+       gtk_grid_attach (GTK_GRID(m_grid), monaco_ed_1, 1,0, 1,1 );
+       gtk_grid_attach (GTK_GRID(m_grid), monaco_bu_1, 2,0, 1,1 );
 
-      monaco_la_2 = gtk_label_new ("Column to export:");
-      monaco_ed2_hbox = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 2 );
+        monaco_la_2 = gtk_label_new ("Column to export/get:");
         monaco_ed_2 = gtk_entry_new ();
-        gtk_entry_set_max_length (GTK_ENTRY(monaco_ed_2), 6);
-        gtk_entry_set_max_width_chars (GTK_ENTRY(monaco_ed_2), 6);
-        gtk_entry_set_width_chars (GTK_ENTRY(monaco_ed_2), 6);
-        monaco_bu_2 = gtk_button_new_with_label("Get this column");
+        gtk_entry_set_max_length (GTK_ENTRY(monaco_ed_2), 5);
+        gtk_entry_set_max_width_chars (GTK_ENTRY(monaco_ed_2), 5);
+        gtk_entry_set_width_chars (GTK_ENTRY(monaco_ed_2), 5);
+        monaco_bu_2 = gtk_button_new_with_label("Get it");
         g_signal_connect( monaco_bu_2, "clicked", G_CALLBACK( get_monaco_column_clicked ), NULL ); 
-      gtk_box_pack_start( GTK_BOX(monaco_ed2_hbox), monaco_ed_2, FALSE, FALSE, 0 );
-      gtk_box_pack_start( GTK_BOX(monaco_ed2_hbox), monaco_bu_2, FALSE, FALSE, 0 );
+       gtk_grid_attach (GTK_GRID(m_grid), monaco_la_2, 0,1, 1,1 );
+       gtk_grid_attach (GTK_GRID(m_grid), monaco_ed_2, 1,1, 1,1 );
+       gtk_grid_attach (GTK_GRID(m_grid), monaco_bu_2, 2,1, 1,1 );
 
       monaco_la_3 = gtk_label_new ("Currently loaded: ");
       monaco_la_4 = gtk_label_new ("N of points: ");
@@ -1181,10 +1220,11 @@ gint main( gint argc, gchar **argv )
       monaco_da = gtk_drawing_area_new ();
       gtk_widget_set_size_request (monaco_da, 100, 100);
 
-      gtk_box_pack_start( GTK_BOX(monaco_vbox_menu), monaco_la_1, FALSE, FALSE, 0 );
-      gtk_box_pack_start( GTK_BOX(monaco_vbox_menu), monaco_ed1_hbox, FALSE, FALSE, 0 );//editable + button
-      gtk_box_pack_start( GTK_BOX(monaco_vbox_menu), monaco_la_2, FALSE, FALSE, 0 );
-      gtk_box_pack_start( GTK_BOX(monaco_vbox_menu), monaco_ed2_hbox, FALSE, FALSE, 0 );
+      // gtk_box_pack_start( GTK_BOX(monaco_vbox_menu), m_2d_box, FALSE, FALSE, 0 );
+      // 2d box can be added is some future.
+      // For now 2d data is stored as text in gchar**, not as gfloat values or points
+      // Only 1d graphs are represented as g_arrays of points.
+      gtk_box_pack_start( GTK_BOX(monaco_vbox_menu), m_grid, FALSE, FALSE, 0 );//text + editable + button
       gtk_box_pack_start( GTK_BOX(monaco_vbox_menu), monaco_la_3, FALSE, FALSE, 0 );//currenty loaded
       gtk_box_pack_start( GTK_BOX(monaco_vbox_menu), monaco_la_4, FALSE, FALSE, 0 );//N of points
       gtk_box_pack_start( GTK_BOX(monaco_vbox_menu), monaco_la_5, FALSE, FALSE, 0 );//Step
@@ -1196,7 +1236,7 @@ gint main( gint argc, gchar **argv )
   gtk_box_pack_start( GTK_BOX(hhbox), monaco_frame, FALSE, FALSE, 2 );
 
 
-  omnipro_frame = gtk_frame_new("Omnipro tools (2): "); //omnipro_hbox
+  omnipro_frame = gtk_frame_new("One dimmentional data: "); //omnipro_hbox
   gtk_container_set_border_width( GTK_CONTAINER(omnipro_frame), 2 );
 
     omnipro_vbox_menu = gtk_box_new( GTK_ORIENTATION_VERTICAL, 2 );  //omnipro_la_1 + ...
@@ -1261,9 +1301,9 @@ gint main( gint argc, gchar **argv )
   // Menu:
   menu_item_file = gtk_menu_item_new_with_label( "File" );
   gtk_menu_shell_append( GTK_MENU_SHELL( main_menu_bar ), menu_item_file );
-   menu_item_monaco = gtk_menu_item_new_with_label( "Monaco" );
+   menu_item_monaco = gtk_menu_item_new_with_label( "2D data" );
   gtk_menu_shell_append( GTK_MENU_SHELL( main_menu_bar ), menu_item_monaco );
-  menu_item_omnipro = gtk_menu_item_new_with_label( "Omnipro" );
+  menu_item_omnipro = gtk_menu_item_new_with_label( "1D data" );
   gtk_menu_shell_append( GTK_MENU_SHELL( main_menu_bar ), menu_item_omnipro );
  
   menu_file = gtk_menu_new();
@@ -1280,16 +1320,18 @@ gint main( gint argc, gchar **argv )
 
   menu_monaco = gtk_menu_new();
     menu_item_open_monaco_plane = gtk_menu_item_new_with_label( "Open Monaco plane file" );
-    menu_item_save_monaco_row = gtk_menu_item_new_with_label( "Export given Monaco row" );
-    menu_item_save_monaco_column = gtk_menu_item_new_with_label( "Export given Monaco column" );
+    menu_item_save_monaco_graph = gtk_menu_item_new_with_label( "Export given Monaco graph" );
+//    menu_item_save_monaco_column = gtk_menu_item_new_with_label( "Export given Monaco column" );
+    menu_item_open_omnipro_imrt_plane = gtk_menu_item_new_with_label( "Open OmniPro I'mRT plane file" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_open_monaco_plane );
-    gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_save_monaco_row );
-    gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_save_monaco_column );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_save_monaco_graph );
+//    gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_save_monaco_column );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_open_omnipro_imrt_plane );
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_monaco), menu_monaco );
 
   menu_omnipro = gtk_menu_new();
-    menu_item_open_omnipro_csv = gtk_menu_item_new_with_label( "Open Omnipro csv file" );
-    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_open_omnipro_csv );
+    menu_item_open_omnipro_accept = gtk_menu_item_new_with_label( "Open OmniproAccept csv file" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_open_omnipro_accept );
 
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_omnipro), menu_omnipro );
  
@@ -1305,12 +1347,14 @@ gint main( gint argc, gchar **argv )
 
   g_signal_connect( main_window, "delete_event",  G_CALLBACK(main_quit), NULL );
   g_signal_connect( menu_item_open_monaco_plane, "activate", G_CALLBACK(open_monaco_plane_clicked), NULL ); 
-  g_signal_connect( menu_item_save_monaco_row, "activate", G_CALLBACK(save_monaco_row_clicked), NULL ); 
-  g_signal_connect( menu_item_save_monaco_column, "activate", G_CALLBACK(save_monaco_column_clicked), NULL ); 
+  g_signal_connect( menu_item_save_monaco_graph, "activate", G_CALLBACK(save_monaco_graph_clicked), NULL ); 
+//  g_signal_connect( menu_item_save_monaco_column, "activate", G_CALLBACK(save_monaco_column_clicked), NULL ); 
+  g_signal_connect( menu_item_open_omnipro_imrt_plane, "activate", G_CALLBACK(open_omnipro_imrt_plane_clicked), NULL ); 
 
-  g_signal_connect( menu_item_open_omnipro_csv, "activate", G_CALLBACK(open_omnipro_csv_clicked), NULL ); 
+  g_signal_connect( menu_item_open_omnipro_accept, "activate", G_CALLBACK(open_omnipro_accept_clicked), NULL ); 
 
 
+  g_signal_connect (G_OBJECT (m_2d_da), "draw",            G_CALLBACK (m_2d_da_draw), NULL);
   g_signal_connect (G_OBJECT (monaco_da), "draw",            G_CALLBACK (monaco_da_draw), NULL);
   g_signal_connect (G_OBJECT (omnipro_da), "draw",            G_CALLBACK (omnipro_da_draw), NULL);
   g_signal_connect (G_OBJECT (compare_da), "draw",            G_CALLBACK (compare_da_draw), NULL);
