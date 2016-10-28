@@ -1162,7 +1162,7 @@ gint main( gint argc, gchar **argv )
   // box contains menu_bar and so on
   main_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_default_size( GTK_WINDOW(main_window), 800, 670 );
-  gtk_window_set_title (GTK_WINDOW(main_window), "dta1d");
+  gtk_window_set_title (GTK_WINDOW(main_window), PACKAGE_STRING );
 //  gtk_window_set_default_icon_from_file( "icon.png", NULL );
   gtk_window_set_icon_name (GTK_WINDOW (main_window), "document-open");
 
