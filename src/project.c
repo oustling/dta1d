@@ -823,7 +823,92 @@ void open_omnipro_accept_clicked(  )
   }
 
 }
-// end of open_omnipro_csv_clicked
+// end of open_omnipro_accept_clicked
+
+
+
+void open_1d_from_csv_clicked(  )
+{
+  GtkWidget*_dialog;
+  gchar*_filename = NULL;
+  GString*_uri = NULL;
+  gchar*_contents = NULL;
+  gsize*_length = NULL;
+//  GString *_temp_text = NULL;
+  guint _n_of_rows;
+  gchar**_splitted_file;
+  gchar**_splitted_row;
+
+  GFile *_opening_file = NULL;
+  GFileInputStream *_file_input = NULL;
+
+  guint _i;
+  point _tp;
+//  gchar **_line_needed_splitted = NULL;
+//  gdouble _var;
+
+//  guint _temp_first_row;
+//  omnipro_dataset _prev_omnipro_dataset;
+
+  _dialog = gtk_file_chooser_dialog_new ("Choose file to open",
+				      GTK_WINDOW(main_window),
+				      GTK_FILE_CHOOSER_ACTION_OPEN,
+				      "_Cancel", GTK_RESPONSE_CANCEL,
+				      "_Open", GTK_RESPONSE_ACCEPT,
+				      NULL);
+  gtk_file_chooser_set_action ( GTK_FILE_CHOOSER(_dialog), GTK_FILE_CHOOSER_ACTION_OPEN);
+  _uri = g_string_new( g_get_current_dir() );
+  g_string_append_printf( _uri, "/data" );
+  gtk_file_chooser_set_current_folder( GTK_FILE_CHOOSER(_dialog), _uri->str );
+  g_string_free( _uri, TRUE );
+
+  if (gtk_dialog_run (GTK_DIALOG (_dialog)) == GTK_RESPONSE_ACCEPT)
+  {
+    _filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (_dialog));
+    g_file_get_contents( (const gchar*) _filename, &_contents, _length, NULL );
+   
+    _splitted_file = g_strsplit ( _contents, "\n", G_MAXINT );
+    _n_of_rows = g_strv_length( _splitted_file );
+    g_array_set_size( omnipro_graph.g, 0 );
+    omnipro_graph.type = GT_CROSSLINE;
+    for( _i=0;_i<_n_of_rows;_i++ )
+    {
+      _splitted_row = g_strsplit ( _splitted_file[_i], ",", G_MAXINT );
+      if( g_strv_length( _splitted_row ) < 2 )
+      {
+        g_strfreev( _splitted_row );
+        g_strfreev( _splitted_file );
+        msg("Something is wrong with the length of some row...");
+        g_free( _filename );
+        g_free( _contents );
+        g_free( _length );
+        gtk_widget_destroy( _dialog );
+        g_array_set_size( omnipro_graph.g, 0 );
+        return;
+      }
+      _tp.x = g_ascii_strtod ( _splitted_row[0], NULL );
+      _tp.dose = g_ascii_strtod ( _splitted_row[1], NULL );
+      g_strfreev( _splitted_row );
+      g_array_append_val( omnipro_graph.g, _tp );
+    }
+
+
+    g_strfreev( _splitted_file );
+    g_free( _filename );
+    g_free( _contents );
+    g_free( _length );
+    gtk_widget_destroy( _dialog );
+    gtk_widget_queue_draw ( omnipro_da );
+    
+  }
+  else
+  {
+    gtk_widget_destroy( _dialog );
+    return;
+  }
+
+}
+// end of open_1d_from_csv_clicked
 
 //-------------------------------------------------------------------//
 // Function operates on csv_splitted array, is should be set first
@@ -832,9 +917,9 @@ void open_omnipro_accept_clicked(  )
 void get_omnipro_dataset_clicked()
 {
   GString *_temp_text = NULL;
-  guint64 _n_of_rows;
+  guint _n_of_rows;
 
-  guint64 _i, _n_of_columns, _n_series;
+  guint _i, _n_of_columns, _n_series;
   gchar **_line_splitted = NULL;
   gdouble _var;
 
@@ -872,7 +957,7 @@ void get_omnipro_dataset_clicked()
 
       g_array_append_val( omnipro_graph.g, _temp_point );
     }
-    g_string_printf ( _temp_text, "Currently loaded set: %" G_GUINT64_FORMAT ,_n_series );
+    g_string_printf ( _temp_text, "Currently loaded set: %d" ,_n_series );
     gtk_label_set_text( GTK_LABEL(omnipro_la_2), _temp_text->str );
     g_string_printf ( _temp_text, "N of points in set: %d", omnipro_graph.g->len );
     gtk_label_set_text( GTK_LABEL(omnipro_la_3), _temp_text->str );
@@ -1321,17 +1406,17 @@ gint main( gint argc, gchar **argv )
   menu_monaco = gtk_menu_new();
     menu_item_open_monaco_plane = gtk_menu_item_new_with_label( "Open Monaco plane file" );
     menu_item_save_monaco_graph = gtk_menu_item_new_with_label( "Export given Monaco graph" );
-//    menu_item_save_monaco_column = gtk_menu_item_new_with_label( "Export given Monaco column" );
     menu_item_open_omnipro_imrt_plane = gtk_menu_item_new_with_label( "Open OmniPro I'mRT plane file" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_open_monaco_plane );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_save_monaco_graph );
-//    gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_save_monaco_column );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_open_omnipro_imrt_plane );
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_monaco), menu_monaco );
 
   menu_omnipro = gtk_menu_new();
     menu_item_open_omnipro_accept = gtk_menu_item_new_with_label( "Open OmniproAccept csv file" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_open_omnipro_accept );
+    menu_item_open_1d_from_csv = gtk_menu_item_new_with_label( "Load 1d data from csv file" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_open_1d_from_csv );
 
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_omnipro), menu_omnipro );
  
@@ -1348,10 +1433,10 @@ gint main( gint argc, gchar **argv )
   g_signal_connect( main_window, "delete_event",  G_CALLBACK(main_quit), NULL );
   g_signal_connect( menu_item_open_monaco_plane, "activate", G_CALLBACK(open_monaco_plane_clicked), NULL ); 
   g_signal_connect( menu_item_save_monaco_graph, "activate", G_CALLBACK(save_monaco_graph_clicked), NULL ); 
-//  g_signal_connect( menu_item_save_monaco_column, "activate", G_CALLBACK(save_monaco_column_clicked), NULL ); 
   g_signal_connect( menu_item_open_omnipro_imrt_plane, "activate", G_CALLBACK(open_omnipro_imrt_plane_clicked), NULL ); 
 
   g_signal_connect( menu_item_open_omnipro_accept, "activate", G_CALLBACK(open_omnipro_accept_clicked), NULL ); 
+  g_signal_connect( menu_item_open_1d_from_csv, "activate", G_CALLBACK(open_1d_from_csv_clicked), NULL ); 
 
 
   g_signal_connect (G_OBJECT (m_2d_da), "draw",            G_CALLBACK (m_2d_da_draw), NULL);

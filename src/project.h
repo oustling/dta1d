@@ -78,11 +78,11 @@ GtkWidget *menu_item_exit;
 GtkWidget *menu_monaco;
 GtkWidget *menu_item_open_monaco_plane;
 GtkWidget *menu_item_save_monaco_graph;
-//GtkWidget *menu_item_save_monaco_column;
 GtkWidget *menu_item_open_omnipro_imrt_plane;
 
 GtkWidget *menu_omnipro;
 GtkWidget *menu_item_open_omnipro_accept;
+GtkWidget *menu_item_open_1d_from_csv;
 //end of menu
 
 GtkWidget *hhbox;
@@ -200,6 +200,7 @@ gboolean is_it_number( const gchar * );
 void draw_garray( GArray*, GArray*, guint, guint, guint, guint, cairo_t*, gboolean );
 
 void open_omnipro_accept_clicked(  );
+void open_1d_from_csv_clicked(  );
 void get_omnipro_dataset_clicked(  );
 void compare_button_clicked(  );
 
