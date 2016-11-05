@@ -185,6 +185,7 @@ void color2_changed( GtkColorButton *_widget, gpointer   user_data );
 
 gboolean compare_doses( gdouble _d1, gdouble _d2, gdouble _sensitivity );
 gdouble abs1( gdouble );
+void trim_garray( GArray* _g, gdouble _min, gdouble _max);
 gint get_number_of_good_points_in_array( GArray* _g );
 point find_point_in_garray( GArray* _g, gdouble _x, gdouble _s );//we give x value and function
                                                           // returns dose for given x from _g, _s is sensitivity

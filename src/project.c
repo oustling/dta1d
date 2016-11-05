@@ -3,6 +3,22 @@
 #include "monaco_functions.c"
 
 //-------------------------------------------------------------------//
+// the garray is trimmed from both sides from min to max 'x' values
+//-------------------------------------------------------------------//
+void trim_garray( GArray* _g, gdouble _min, gdouble _max)
+{
+  if(_g==NULL)return;
+  if(_g->len==0)return;
+  guint _i;
+  for(_i=0;_i<_g->len;_i++)
+  {
+    if( g_array_index( _g, point, _i ).x < _min || g_array_index( _g, point, _i ).x > _max )
+                 g_array_remove_index( _g, _i );
+  }
+}
+
+
+//-------------------------------------------------------------------//
 // Function counts number of good points in array _g
 //-------------------------------------------------------------------//
 gint get_number_of_good_points_in_array( GArray* _g )
@@ -834,7 +850,6 @@ void open_1d_from_csv_clicked(  )
   GString*_uri = NULL;
   gchar*_contents = NULL;
   gsize*_length = NULL;
-//  GString *_temp_text = NULL;
   guint _n_of_rows;
   gchar**_splitted_file;
   gchar**_splitted_row;
@@ -844,11 +859,6 @@ void open_1d_from_csv_clicked(  )
 
   guint _i;
   point _tp;
-//  gchar **_line_needed_splitted = NULL;
-//  gdouble _var;
-
-//  guint _temp_first_row;
-//  omnipro_dataset _prev_omnipro_dataset;
 
   _dialog = gtk_file_chooser_dialog_new ("Choose file to open",
 				      GTK_WINDOW(main_window),
@@ -932,7 +942,6 @@ void get_omnipro_dataset_clicked()
   
   if( _temp_text->len > 3 )
   {
-//    csv_graph_type = GT_UNDEFINED;
     _line_splitted = g_strsplit( _temp_text->str, ".", -1 );
     _n_series = g_ascii_strtoull( _line_splitted[0], NULL, 10 );
     if( g_strrstr( _temp_text->str, "Crossline" ) != NULL )omnipro_graph.type = GT_CROSSLINE;
@@ -1155,12 +1164,11 @@ void compare_button_clicked(  )
   gdouble _new_garray_max = MIN( max_x_from_garray( monaco_graph.g ),
                                  max_x_from_garray( omnipro_graph.g ) );
   guint _n_of_points = ( _new_garray_max - _new_garray_min ) * 10;
-  gdouble _temp_delta;
+  gdouble _temp_dta;
 
   point _point;
 
   g_array_set_size ( checked_garray_trimmed, 0 );
-//  GArray* _delta_garray = g_array_new(FALSE, FALSE, sizeof (point));
   GArray* _tested_garray;
 
   // do we want to check 1vs2 or 2vs1 ?
@@ -1181,16 +1189,16 @@ void compare_button_clicked(  )
     _point.dose = find_point_in_garray( _tested_garray, _point.x, 0.5*get_step_of_garray(_tested_garray) ).dose;
     g_array_append_val( checked_garray_trimmed, _point );
   }
+  trim_garray( the_other_garray, min_x_from_garray(checked_garray_trimmed), max_x_from_garray(checked_garray_trimmed));
   // now we have sommething we want to check
   for( _i=0; _i<=checked_garray_trimmed->len; _i++ )
   { 
     _point = g_array_index( checked_garray_trimmed, point, _i );
-    _temp_delta = check_dta( the_other_garray, &g_array_index( checked_garray_trimmed, point, _i ) );
-    g_array_index( checked_garray_trimmed, point, _i ).result = _temp_delta;
-    if( _temp_delta == -1 ){ msg("Something went wrong while dta calculations.\n"); break; }
+    _temp_dta = check_dta( the_other_garray, &g_array_index( checked_garray_trimmed, point, _i ) );
+    g_array_index( checked_garray_trimmed, point, _i ).result = _temp_dta;
+    if( _temp_dta == -1 ){ msg("Something went wrong while dta calculations.\n"); break; }
   }
   gtk_widget_queue_draw ( compare_da );
-//  g_array_free ( _delta_garray, TRUE );
 }
 
 gboolean compare_doses( gdouble _d1, gdouble _d2, gdouble _sensitivity )
