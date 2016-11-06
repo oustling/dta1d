@@ -14,7 +14,7 @@ num_of_angles = 200 # num of checked angles between 0 and π/2
 
 for i in range( 0, num_of_points ): A.append(0.0)
 
-for i in range( 0 , num_of_angles - 1): # that -1 is here because plane π/2 cause problems
+for i in range( 0 , num_of_angles - 1): # that -1 is here because π/2 cause problems
     angle = (i*pi)/(2*num_of_angles)
     x = ssd/(ssd*cos(angle)/a - sin(angle))
     for j in range( 0, num_of_points ):
