@@ -881,11 +881,11 @@ void open_1d_from_csv_clicked(  )
     _n_of_rows = g_strv_length( _splitted_file );
     g_array_set_size( omnipro_graph.g, 0 );
     omnipro_graph.type = GT_CROSSLINE;
-    for( _i=0;_i<_n_of_rows;_i++ )
+    for( _i=0;_i<_n_of_rows-1;_i++ )
     {
       _splitted_row = g_strsplit ( _splitted_file[_i], ",", G_MAXINT );
-      if( g_strv_length( _splitted_row ) < 2 )
-      {
+      if( g_strv_length( _splitted_row ) < 1 )
+      { 
         g_strfreev( _splitted_row );
         g_strfreev( _splitted_file );
         msg("Something is wrong with the length of some row...");
