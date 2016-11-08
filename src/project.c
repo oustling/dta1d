@@ -791,7 +791,17 @@ void open_omnipro_accept_clicked(  )
     gtk_combo_box_text_remove_all( GTK_COMBO_BOX_TEXT(omnipro_combo_box_text) );
     _temp_text = g_string_new ("");
 
+    gtk_widget_show( omnipro_la_1 );
+    gtk_widget_show( omnipro_combo_box_text );
+    gtk_widget_show( omnipro_button );
+    gtk_widget_show( omnipro_la_2 );
+    gtk_widget_show( omnipro_la_3 );
+    gtk_widget_show( omnipro_la_4 );
+    g_array_set_size( omnipro_graph.g, 0 );
+
     g_array_set_size ( omnipro_sets_garray, 0 ); //now we need to identify sets
+    gtk_widget_queue_draw ( omnipro_da );
+
     for( _i=0; _i<n_of_csv_lines; _i++ )
     {
       if( g_str_has_prefix ( csv_splitted[_i], ",Crossline(cm),Inline(cm),Depth(cm),Dose(%)" ) )
@@ -842,7 +852,11 @@ void open_omnipro_accept_clicked(  )
 // end of open_omnipro_accept_clicked
 
 
-
+//-------------------------------------------------------------------//
+// this function loads 1D data from csv file
+// the file must be: x, dose_value formatted 
+// each line is read, distance between x should be 0.1 cm
+//-------------------------------------------------------------------//
 void open_1d_from_csv_clicked(  )
 {
   GtkWidget*_dialog;
@@ -901,6 +915,14 @@ void open_1d_from_csv_clicked(  )
       g_strfreev( _splitted_row );
       g_array_append_val( omnipro_graph.g, _tp );
     }
+    normalize_graph( omnipro_graph, NORM_TO_CENTER );
+    gtk_widget_queue_draw ( omnipro_da );
+    gtk_widget_hide( omnipro_la_1 );
+    gtk_widget_hide( omnipro_combo_box_text );
+    gtk_widget_hide( omnipro_button );
+    gtk_widget_hide( omnipro_la_2 );
+    gtk_widget_hide( omnipro_la_3 );
+    gtk_widget_hide( omnipro_la_4 );
 
 
     g_strfreev( _splitted_file );
@@ -908,8 +930,6 @@ void open_1d_from_csv_clicked(  )
     g_free( _contents );
     g_free( _length );
     gtk_widget_destroy( _dialog );
-    gtk_widget_queue_draw ( omnipro_da );
-    
   }
   else
   {

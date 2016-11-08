@@ -3,12 +3,12 @@
 # from gantry at 0 degrees the field has 1cm of width, but what size will be, when 
 # gantry turns? it will increase, get infinity when gantry is at 90 degrees.
 
-from math import pi, sin, cos
+from math import pi, sin, cos, exp, sqrt
 from numpy import convolve
 
 A = []              # our profile will be here
-num_of_points = 301 # the points are place every 0.1cm, so this defines the width of profile 
-a = 1               # stripe width
+num_of_points = 301 # the points are placed every 0.1cm, so this defines the width of profile 
+a = 1               # stripe width in cm
 ssd = 100           # source surface distance = source izocenter distance
 num_of_angles = 200 # num of checked angles between 0 and π/2 
 
@@ -21,6 +21,24 @@ for i in range( 0 , num_of_angles - 1): # that -1 is here because π/2 cause pro
         x_checked = (j-num_of_points/2+0.5)*0.1
         if(x_checked >= -x and x_checked <= x): A[j] = A[j]+1.0 
 
+#for i in range( 0, num_of_points ):
+#     x = (i-num_of_points/2+0.5)*0.1
+#     print( x,", ", A[i] )
+
+
+
+def fi( x, sigma ):
+    return ((exp(-(x*x)/(2*sigma*sigma)))/(sigma*sqrt(2*pi)) )
+
+B = []
 for i in range( 0, num_of_points ):
-     x = (i-num_of_points/2+0.5)*0.1
-     print( x,", ", A[i] )
+    x = (i-num_of_points/2+0.5)*0.1
+    B.append( fi(x, 0.3) )
+#    print( x,", ", B[i] )
+
+C = convolve( A, B, 'same' )
+
+for i in range( 0, num_of_points ):
+    x = (i-num_of_points/2+0.5)*0.1
+    print( x,", ", C[i] )
+
