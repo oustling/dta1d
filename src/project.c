@@ -640,11 +640,10 @@ gdouble get_step_of_garray( GArray* _g )
 //-------------------------------------------------------------------//
 // Function changes values in garray according to specified normalization 
 //-------------------------------------------------------------------//
-gdouble normalize_graph( graph _g, guint _norm_type )
+void normalize_graph( graph _g, guint _norm_type )
 {
   guint _i;
   gdouble _temp = 0;
-  gdouble _temp2 = 0;
   point _point, _point_2;
 
   if( _g.type == GT_DEPTH)
@@ -654,26 +653,32 @@ gdouble normalize_graph( graph _g, guint _norm_type )
   }
   if( (_g.type == GT_CROSSLINE) || (_g.type == GT_INLINE) )
   {
-    if( _g.g->len % 2 == 1 )
+    if( _norm_type == NORM_TO_CENTER )
+      {
+      if( _g.g->len % 2 == 1 )
+      {
+        _point = g_array_index( _g.g, point, (guint)(_g.g->len * 0.5 + 0.5) );
+        _temp = _point.dose;
+      } 
+      else 
+      {
+        _point = g_array_index( _g.g, point, (guint)(_g.g->len * 0.5) );
+        _point_2 = g_array_index( _g.g, point, (guint)(_g.g->len * 0.5 + 1) );
+        _temp = ( _point.dose + _point_2.dose ) * 0.5;
+      }
+    }
+    else //NORM_TO_MAX
     {
-      _point = g_array_index( _g.g, point, (guint)(_g.g->len * 0.5 + 0.5) );
-      _temp = _point.dose;
-    } 
-    else 
-    {
-      _point = g_array_index( _g.g, point, (guint)(_g.g->len * 0.5) );
-      _point_2 = g_array_index( _g.g, point, (guint)(_g.g->len * 0.5 + 1) );
-      _temp = ( _point.dose + _point_2.dose ) * 0.5;
+      _temp = max_dose_from_garray( _g.g );
     }
   }
  
-  _temp2 = 100/_temp;
+  _temp = 100/_temp;
 
   for(_i=0;_i<_g.g->len;_i++)
   {
-    g_array_index( _g.g, point, _i ).dose = g_array_index( _g.g, point, _i ).dose*_temp2;
+    g_array_index( _g.g, point, _i ).dose = g_array_index( _g.g, point, _i ).dose*_temp;
   }
-  return _temp;
 }
 
 
@@ -684,6 +689,16 @@ gdouble max_x_from_garray( GArray* _g )
   gdouble _temp = -10e10;
   for(_i=0; _i<_g->len; _i++)
       if( g_array_index( _g, point, _i ).x > _temp ) _temp = g_array_index( _g, point, _i ).x;
+  return _temp;
+}
+
+//max dose from garray
+gdouble max_dose_from_garray( GArray* _g )
+{
+  guint _i;
+  gdouble _temp = -10e10;
+  for(_i=0; _i<_g->len; _i++)
+      if( g_array_index( _g, point, _i ).dose > _temp ) _temp = g_array_index( _g, point, _i ).dose;
   return _temp;
 }
 
@@ -941,8 +956,40 @@ void open_1d_from_csv_clicked(  )
 // end of open_1d_from_csv_clicked
 
 //-------------------------------------------------------------------//
-// Function operates on csv_splitted array, is should be set first
-// and creates omnipro_garray filled with point structures.
+// The next four are normalization functions from menu 
+//-------------------------------------------------------------------//
+void menu_item_2d_normalize_to_max_clicked()
+{
+  if(monaco_graph.g->len == 0){msg("No data loaded");return;}
+  normalize_graph( monaco_graph, NORM_TO_MAX );
+  gtk_widget_queue_draw ( monaco_da );
+}
+
+void menu_item_2d_normalize_to_center_clicked()
+{
+  if(monaco_graph.g->len == 0){msg("No data loaded");return;}
+  normalize_graph( monaco_graph, NORM_TO_CENTER );
+  gtk_widget_queue_draw ( monaco_da );
+}
+
+void menu_item_1d_normalize_to_max_clicked()
+{
+  if(omnipro_graph.g->len == 0){msg("No data loaded");return;}
+  normalize_graph( omnipro_graph, NORM_TO_MAX );
+  gtk_widget_queue_draw ( omnipro_da );
+}
+
+void menu_item_1d_normalize_to_center_clicked()
+{
+  if(omnipro_graph.g->len == 0){msg("No data loaded");return;}
+  normalize_graph( omnipro_graph, NORM_TO_CENTER );
+  gtk_widget_queue_draw ( omnipro_da );
+}
+
+
+//-------------------------------------------------------------------//
+// Function operates on csv_splitted array, the garray should be created first
+// function creates omnipro_garray filled with point structures.
 //-------------------------------------------------------------------//
 void get_omnipro_dataset_clicked()
 {
@@ -1435,9 +1482,13 @@ gint main( gint argc, gchar **argv )
     menu_item_open_monaco_plane = gtk_menu_item_new_with_label( "Open Monaco plane file" );
     menu_item_save_monaco_graph = gtk_menu_item_new_with_label( "Export given Monaco graph" );
     menu_item_open_omnipro_imrt_plane = gtk_menu_item_new_with_label( "Open OmniPro I'mRT plane file" );
+    menu_item_2d_normalize_to_max = gtk_menu_item_new_with_label( "Normalize to Dmax" );
+    menu_item_2d_normalize_to_center = gtk_menu_item_new_with_label( "Normalize to center" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_open_monaco_plane );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_save_monaco_graph );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_open_omnipro_imrt_plane );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_2d_normalize_to_max );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_2d_normalize_to_center );
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_monaco), menu_monaco );
 
   menu_omnipro = gtk_menu_new();
@@ -1445,6 +1496,10 @@ gint main( gint argc, gchar **argv )
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_open_omnipro_accept );
     menu_item_open_1d_from_csv = gtk_menu_item_new_with_label( "Load 1d data from csv file" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_open_1d_from_csv );
+    menu_item_1d_normalize_to_max = gtk_menu_item_new_with_label( "Normalize to Dmax" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_normalize_to_max );
+    menu_item_1d_normalize_to_center = gtk_menu_item_new_with_label( "Normalize to center" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_normalize_to_center );
 
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_omnipro), menu_omnipro );
  
@@ -1462,9 +1517,13 @@ gint main( gint argc, gchar **argv )
   g_signal_connect( menu_item_open_monaco_plane, "activate", G_CALLBACK(open_monaco_plane_clicked), NULL ); 
   g_signal_connect( menu_item_save_monaco_graph, "activate", G_CALLBACK(save_monaco_graph_clicked), NULL ); 
   g_signal_connect( menu_item_open_omnipro_imrt_plane, "activate", G_CALLBACK(open_omnipro_imrt_plane_clicked), NULL ); 
+  g_signal_connect( menu_item_2d_normalize_to_max, "activate", G_CALLBACK(menu_item_2d_normalize_to_max_clicked), NULL ); 
+  g_signal_connect( menu_item_2d_normalize_to_center, "activate", G_CALLBACK(menu_item_2d_normalize_to_center_clicked), NULL ); 
 
   g_signal_connect( menu_item_open_omnipro_accept, "activate", G_CALLBACK(open_omnipro_accept_clicked), NULL ); 
   g_signal_connect( menu_item_open_1d_from_csv, "activate", G_CALLBACK(open_1d_from_csv_clicked), NULL ); 
+  g_signal_connect( menu_item_1d_normalize_to_max, "activate", G_CALLBACK(menu_item_1d_normalize_to_max_clicked), NULL ); 
+  g_signal_connect( menu_item_1d_normalize_to_center, "activate", G_CALLBACK(menu_item_1d_normalize_to_center_clicked), NULL ); 
 
 
   g_signal_connect (G_OBJECT (m_2d_da), "draw",            G_CALLBACK (m_2d_da_draw), NULL);

@@ -79,10 +79,14 @@ GtkWidget *menu_monaco;
 GtkWidget *menu_item_open_monaco_plane;
 GtkWidget *menu_item_save_monaco_graph;
 GtkWidget *menu_item_open_omnipro_imrt_plane;
+GtkWidget *menu_item_2d_normalize_to_max;
+GtkWidget *menu_item_2d_normalize_to_center;
 
 GtkWidget *menu_omnipro;
 GtkWidget *menu_item_open_omnipro_accept;
 GtkWidget *menu_item_open_1d_from_csv;
+GtkWidget *menu_item_1d_normalize_to_max;
+GtkWidget *menu_item_1d_normalize_to_center;
 //end of menu
 
 GtkWidget *hhbox;
@@ -193,8 +197,9 @@ gdouble check_dta( GArray* , point* ); //we check the point
                                                    //from _checked_garray_trimmed against _second garray points,
                                                    //according to defined agreements
 gdouble get_step_of_garray( GArray* );
-gdouble normalize_graph(  graph, guint _norm_type );
+void normalize_graph(  graph, guint _norm_type );
 gdouble max_x_from_garray( GArray* );
+gdouble max_dose_from_garray( GArray* );
 gdouble min_x_from_garray( GArray* );
 static void msg( const gchar * );
 gboolean is_it_number( const gchar * );

@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 
 AC_PREREQ(2.61)
-AC_INIT([dta1d], [0.0.2], [])
+AC_INIT([dta1d], [0.0.3], [])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 
