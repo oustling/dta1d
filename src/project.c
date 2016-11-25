@@ -1,6 +1,58 @@
 #include "project.h"
 
-#include "monaco_functions.c"
+#include "2D_functions.c"
+#include "1D_functions.c"
+#include "helper_functions.c"
+
+//-------------------------------------------------------------------//
+// we assume that _g is dose profile graph = there are two points that
+// have dose = 50% 
+//-------------------------------------------------------------------//
+void calculate_fwhm( graph*_g )
+{
+  if( _g->g->len == 0 )return;
+  if( _g->type == GT_DEPTH )return;
+  point _p1, _p2, _p3, _p4;
+  guint _i;
+  guint _counter = 0;
+
+  for( _i=0; _i<_g->g->len; _i++)
+  {
+    if( _counter == 0 )
+    {
+      if(  g_array_index( _g->g, point, _i ).dose >= 50.0 )
+      {
+        _p1.x    = g_array_index( _g->g, point, _i ).x;
+        _p1.dose = g_array_index( _g->g, point, _i ).dose;
+        _p2.x    = g_array_index( _g->g, point, _i-1 ).x;
+        _p2.dose = g_array_index( _g->g, point, _i-1 ).dose;
+        _i++;
+        _counter = 1;
+      }
+      else _i++;
+    }
+    else // _counter == 1 
+    {
+      if(  g_array_index( _g->g, point, _i ).dose <= 50.0 )
+      {
+        _p3.x    = g_array_index( _g->g, point, _i ).x;
+        _p3.dose = g_array_index( _g->g, point, _i ).dose;
+        _p4.x    = g_array_index( _g->g, point, _i-1 ).x;
+        _p4.dose = g_array_index( _g->g, point, _i-1 ).dose;
+        _i++;
+        _counter = 1;
+        break;
+      }
+      else _i++;
+    }
+  }
+  // now we have four points
+  gdouble _a = ((50-_p1.dose)*(_p2.x-_p1.x))/(_p2.dose-_p1.dose)+_p1.x;
+  gdouble _b = _p4.x - ((_p4.dose-50)*(_p4.x-_p3.x))/(_p4.dose-_p3.dose);
+  _g->first_50  = _a;
+  _g->second_50 = _b; 
+}
+
 
 //-------------------------------------------------------------------//
 // the garray is trimmed from both sides from min to max 'x' values
@@ -17,20 +69,104 @@ void trim_garray( GArray* _g, gdouble _min, gdouble _max)
   }
 }
 
-
 //-------------------------------------------------------------------//
-// Function counts number of good points in array _g
+// Function draws dots on given cairo_t according to values in graph 
 //-------------------------------------------------------------------//
-gint get_number_of_good_points_in_array( GArray* _g )
+void draw_dots( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y )
 {
-  gint _i;
-  gint _j = 0;
+  if( !_g )return;
+  if( !_g->g )return;
+  if ( _g->g->len == 0 )return;
 
-  for( _i=0; _i<=_g->len; _i++ )
+  GdkRGBA _c1; // ok dots
+  GdkRGBA _c2; // not ok dots
+  guint _i;
+  gdk_rgba_parse( &_c1, "navy" );
+  gdk_rgba_parse( &_c2, "red" );
+
+  cairo_set_line_width( _cr, 2 );
+  for(_i=0; _i<_g->g->len; _i++ )
   {
-    if( g_array_index( _g, point, _i ).result == 1 ) _j++;
+    if( g_array_index( _g->g, point, _i ).result == 0 )
+                                  gdk_cairo_set_source_rgba (_cr, &_c1);//good
+    else if( g_array_index( _g->g, point, _i ).result == 1 ) gdk_cairo_set_source_rgba (_cr, &_c2);//bad
+    if( g_array_index( _g->g, point, _i ).result != -1 )
+    {
+      cairo_arc( _cr, 0.5*_w + g_array_index( _g->g, point, _i ).x * _w*0.8*0.5 / (15.0) + _x,
+                      _h*0.9 - g_array_index( _g->g, point, _i ).dose*0.01 * 0.8 * _h + _y, 1., 0., 2 * G_PI);
+      cairo_stroke ( _cr );
+
+    }
   }
-  return _j;
+
+}
+
+//-------------------------------------------------------------------//
+// Function draws on given cairo_t given graph 
+//-------------------------------------------------------------------//
+void draw_graph( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y )
+{
+  if( !_g )return;
+  if( !_g->g )return;
+  if ( _g->g->len == 0 )return;
+  guint _i;
+
+
+  // move to first point              // 15 should be on 0.8*_width*0.5
+  cairo_set_line_width( _cr, 1 );
+  cairo_move_to ( _cr, 0.5*_w + g_array_index( _g->g, point, 0 ).x * _w *0.8*0.5 / (15.0) + _x,
+                           _h*0.9 - g_array_index( _g->g, point, 0 ).dose *0.01 * 0.8 * _h + _y );
+
+  for(_i=1; _i<_g->g->len; _i++ )
+  {
+    cairo_line_to( _cr, 0.5*_w + g_array_index( _g->g, point, _i ).x * _w*0.8*0.5 / (15.0) + _x,
+                            _h*0.9 - g_array_index( _g->g, point, _i ).dose *0.01 * 0.8 * _h + _y );
+  }
+
+  gdk_cairo_set_source_rgba (_cr, &global_options.color_1 );
+  cairo_stroke ( _cr );
+}
+
+//-------------------------------------------------------------------//
+// Function draws fwhm of given graph on cairo_t 
+// if _x, and_y are 0 it will display info in upper right corner
+// _x, _y are to adjust it,
+// _txt will be printed before FWHM value 
+//-------------------------------------------------------------------//
+void draw_fwhm_txt ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y, char*_txt )
+{
+  GString *_temp_text = NULL;
+  _temp_text = g_string_new ("");
+  calculate_fwhm( _g );
+  GdkRGBA _c2;
+  gdk_rgba_parse( &_c2, "red" );
+
+  gdk_cairo_set_source_rgba (_cr, &_c2 );
+  cairo_move_to ( _cr, _w*0.62 + _x, _h *0.1 + _y );
+  g_string_printf( _temp_text, "%s %.2fcm", _txt, _g->second_50-_g->first_50, NULL );
+  cairo_show_text ( _cr, _temp_text->str );
+  cairo_stroke ( _cr );
+  g_string_free( _temp_text , TRUE );
+
+}
+
+//-------------------------------------------------------------------//
+// Function draws fwhm line of given graph on cairo_t 
+//-------------------------------------------------------------------//
+void draw_fwhm_line ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y )
+{
+  calculate_fwhm( _g );
+  GdkRGBA _c2;
+  gdk_rgba_parse( &_c2, "red" );
+
+  gdk_cairo_set_source_rgba (_cr, &_c2 );
+  cairo_set_line_width( _cr, 1 );
+  cairo_move_to ( _cr, 0.5*_w + _g->first_50 * _w *0.8*0.5 / (15.0) + _x,
+                           _h*0.9 - 50 *0.01 * 0.8 * _h + _y );
+
+  cairo_line_to ( _cr, 0.5*_w + _g->second_50 * _w *0.8*0.5 / (15.0) + _x,
+                           _h*0.9 - 50 *0.01 * 0.8 * _h + _y );
+  cairo_stroke ( _cr );
 }
 
 
@@ -89,8 +225,10 @@ void draw_background( cairo_t *_cr, guint _width, guint _height, guint _x, guint
     cairo_move_to ( _cr, _width*0.1 + (0.8*_width*_i)/6 + _x, _height *0.95 + _y ); 
     cairo_show_text ( _cr,_temp_text->str );
   }
-  cairo_move_to ( _cr, _width*0.5 + _x, _height *0.08 + _y ); 
+  cairo_move_to ( _cr, _width*0.05 + _x, _height *0.09 + _y ); 
   cairo_show_text ( _cr, "100%" );
+  cairo_move_to ( _cr, _width*0.05 + _x, _height *0.49 + _y ); 
+  cairo_show_text ( _cr, "50%" );
 
   gdk_rgba_parse (&_color,"black");
   gdk_cairo_set_source_rgba (_cr, &_color);
@@ -117,31 +255,58 @@ static void draw_page (GtkPrintOperation *operation,
            gint               page_nr,
            gpointer           user_data)
 {
-  cairo_t *cr;
+  cairo_t *_cr;
   PangoLayout *layout;
   gint text_width, text_height;
-  gdouble width, height;
-  gint line,i;
+  gdouble _w, _h;
+  gint line;
   PangoFontDescription *desc;
   gchar *page_str;
 
-  cr = gtk_print_context_get_cairo_context (context);
-  width  = gtk_print_context_get_width (context);
-  height = gtk_print_context_get_height (context);
+  _cr = gtk_print_context_get_cairo_context (context);
+  _w = gtk_print_context_get_width (context);
+  _h = gtk_print_context_get_height (context);
   
-  cairo_rectangle( cr, 0, 0, width, 30 );
+  cairo_rectangle( _cr, 0, 0, _w, 30 );
 
-  cairo_set_source_rgb (cr, 0.8, 0.8, 0.8);
-  cairo_fill_preserve (cr);
+  cairo_set_source_rgb (_cr, 0.8, 0.8, 0.8);
+  cairo_fill_preserve (_cr);
 
-  cairo_set_source_rgb (cr, 0, 0, 0);
-  cairo_set_line_width (cr, 1);
-  cairo_stroke (cr);
+  cairo_set_source_rgb (_cr, 0, 0, 0);
+  cairo_set_line_width (_cr, 1);
+  cairo_stroke (_cr);
 
-  draw_garray( checked_garray_trimmed, the_other_garray, width, height * 0.5, 0, 20, cr, TRUE );
+//  draw_garray( width, height * 0.5, 0, 20, cr );
+  graph*_tested_g;
+  graph*_other_g;
 
-  cairo_set_source_rgb (cr, 0, 0, 0);
-  cairo_set_line_width (cr, 1);
+  draw_background( _cr, _w, _h*0.5, 0, 20 );
+  if( are_calculations_current )
+  {
+
+
+    if( gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(compare_rb_1)) )
+    {
+      _tested_g = &monaco_graph;
+      _other_g  = &omnipro_graph;
+    }
+    else
+    {
+      _tested_g = &omnipro_graph;
+      _other_g  = &monaco_graph;
+    }
+
+    draw_graph( &omnipro_graph, _cr, _w, _h*0.5, 0, 20 );
+    draw_graph( &monaco_graph, _cr, _w, _h*0.5, 0, 20 );
+    draw_dots( _tested_g, _cr, _w, _h*0.5, 0, 20 );
+    draw_fwhm_txt( &omnipro_graph, _cr, _w, _h*0.5, 0, 20, "1D FWHM" );
+    draw_fwhm_line( &omnipro_graph, _cr, _w, _h*0.5, 0, 20 );
+    draw_fwhm_txt( &monaco_graph, _cr, _w, _h*0.5, 0, 35, "2D FWHM" );
+    draw_fwhm_line( &monaco_graph, _cr, _w, _h*0.5, 0, 20 );
+  }
+
+  cairo_set_source_rgb (_cr, 0, 0, 0);
+  cairo_set_line_width (_cr, 1);
 
   layout = gtk_print_context_create_pango_layout (context);
 
@@ -150,14 +315,14 @@ static void draw_page (GtkPrintOperation *operation,
   pango_font_description_free (desc);
   pango_layout_set_text (layout, "Report", -1);
   pango_layout_get_pixel_size (layout, &text_width, &text_height);
-  if (text_width > width)
+  if (text_width > _w)
     {
-      pango_layout_set_width (layout, width);
+      pango_layout_set_width (layout, _w);
       pango_layout_set_ellipsize (layout, PANGO_ELLIPSIZE_START);
       pango_layout_get_pixel_size (layout, &text_width, &text_height);
     }
-  cairo_move_to (cr, (width - text_width) / 2,  (30 - text_height) / 2);
-  pango_cairo_show_layout (cr, layout);
+  cairo_move_to (_cr, (_w - text_width) / 2,  (30 - text_height) / 2);
+  pango_cairo_show_layout (_cr, layout);
 
   page_str = g_strdup_printf ("Checking options: dose difference[%%]: %.3f, dta[mm]: %.3f",
                               global_options.dose_difference, global_options.dta );
@@ -168,10 +333,10 @@ static void draw_page (GtkPrintOperation *operation,
   g_free (page_str);
   pango_layout_set_width (layout, -1);
   pango_layout_get_pixel_size (layout, &text_width, &text_height);
-  cairo_move_to (cr, 30, height *0.5 + 40);
-  pango_cairo_show_layout (cr, layout);
+  cairo_move_to (_cr, 30, _h *0.5 + 40);
+  pango_cairo_show_layout (_cr, layout);
 
-  page_str = g_strdup_printf ("Number of checked points: %d", checked_garray_trimmed->len );
+  page_str = g_strdup_printf ("Number of checked points: %d", _tested_g->g->len );
   desc = pango_font_description_from_string ("sans 12");
   pango_layout_set_font_description (layout, desc);
   pango_font_description_free (desc);
@@ -179,12 +344,11 @@ static void draw_page (GtkPrintOperation *operation,
   g_free (page_str);
   pango_layout_set_width (layout, -1);
   pango_layout_get_pixel_size (layout, &text_width, &text_height);
-  cairo_move_to (cr, 30, height *0.5 + 40 + text_height);
-  pango_cairo_show_layout (cr, layout);
+  cairo_move_to (_cr, 30, _h *0.5 + 40 + text_height);
+  pango_cairo_show_layout (_cr, layout);
 
-  i = get_number_of_good_points_in_array( checked_garray_trimmed );
-  page_str = g_strdup_printf ("Number of points that meets criteria: %d (%.1f%%)", i,
-                                              (gfloat)100*((gfloat)i/(gfloat)checked_garray_trimmed->len) );
+  page_str = g_strdup_printf ("Number of points that meets criteria: %d (%.1f%%)", get_number_of_good_points_in_graph( _tested_g ),
+              100*((gfloat)get_number_of_good_points_in_graph( _tested_g )/(gfloat)get_number_of_checked_points_in_graph( _tested_g )) );
   desc = pango_font_description_from_string ("sans 12");
   pango_layout_set_font_description (layout, desc);
   pango_font_description_free (desc);
@@ -192,12 +356,10 @@ static void draw_page (GtkPrintOperation *operation,
   g_free (page_str);
   pango_layout_set_width (layout, -1);
   pango_layout_get_pixel_size (layout, &text_width, &text_height);
-  cairo_move_to (cr, 30, height *0.5 + 40 + 2*text_height );
-  pango_cairo_show_layout (cr, layout);
-
+  cairo_move_to (_cr, 30, _h *0.5 + 40 + 2*text_height );
+  pango_cairo_show_layout (_cr, layout);
 
   g_object_unref (layout);
-
 }
 
 //-------------------------------------------------------------------//
@@ -490,12 +652,12 @@ gdouble abs1(gdouble _x)
 // _g is array filled with points, _sensitivity should be set
 // to 0.5*step_of_array; 
 //-------------------------------------------------------------------//
-point find_point_in_garray( GArray* _g, gdouble _x, gdouble _sensitivity )
+point* find_point_in_garray( GArray* _g, gdouble _x, gdouble _sensitivity )
 {
   gint _i;
   for( _i=0; _i<=_g->len; _i++ )
   {
-    if( abs1( g_array_index( _g, point, _i ).x - _x) < _sensitivity ) return g_array_index( _g, point, _i );
+    if( abs1( g_array_index( _g, point, _i ).x - _x) < _sensitivity ) return &g_array_index( _g, point, _i );
   }
 //  return NULL;
 }
@@ -512,7 +674,7 @@ point find_point_in_garray( GArray* _g, gdouble _x, gdouble _sensitivity )
 // returns 0 if we meet criteria, if not returns 1 //like gamma method
 // -1 on error
 //-------------------------------------------------------------------//
-gdouble check_dta(  GArray* _second, point* _p )
+gdouble check_dta(  GArray*_second, point*_p )
 {
   gdouble _difference = global_options.dose_difference;
   gdouble _dta = global_options.dta;
@@ -529,8 +691,8 @@ gdouble check_dta(  GArray* _second, point* _p )
   GString* _s;
   GArray* _temp_garray; 
 
-  _first_dose = find_point_in_garray( checked_garray_trimmed, _x, 0.5*get_step_of_garray( checked_garray_trimmed ) ).dose;
-  _second_dose = find_point_in_garray( _second, _x, 0.5*get_step_of_garray( _second ) ).dose;
+  _first_dose = _p->dose;
+  _second_dose = find_point_in_garray( _second, _x, 0.5*get_step_of_garray( _second ) )->dose;
   _s = g_string_new("");
   /**/  g_string_append_printf( _s, "FD: %2.3f, SD: %2.3f; ", _first_dose, _second_dose, NULL );
   
@@ -549,17 +711,17 @@ gdouble check_dta(  GArray* _second, point* _p )
   // in that algorithm we simply go left or right on the garray: the_other_garray, beginning from the place (x)
   // we want to check. We check the difference between dose values. |D1 - D2| If we meet the local minimum 
   // (the next dose difference is greater), we check the distance x1-x2.
-  // If it is less than defined dta the point is ok, otherwise not.
+  //_new_garray_min/ If it is less than defined dta the point is ok, otherwise not.
   // This is simple way for theoretic curves, but for real measurement or real calculations, wchich are not smooth,
   // someteimes is gives false results. Because of that other algorithms have been implemented.
     for(;;)
     {
-      _second_dose = find_point_in_garray( _second, _x2, 0.5*get_step_of_garray( _second ) ).dose;
+      _second_dose = find_point_in_garray( _second, _x2, 0.5*get_step_of_garray( _second ) )->dose;
       _diff_0 = abs1( _first_dose - _second_dose );
     /**/  g_string_append_printf( _s, "D: %2.2f, DD: %2.2f ", _second_dose, _diff_0, NULL);
-      _second_dose = find_point_in_garray( _second, _x2+get_step_of_garray( _second ), 0.5*get_step_of_garray( _second ) ).dose;
+      _second_dose = find_point_in_garray( _second, _x2+get_step_of_garray( _second ), 0.5*get_step_of_garray( _second ) )->dose;
       _diff_p1 = abs1( _first_dose - _second_dose );
-      _second_dose = find_point_in_garray( _second, _x2-get_step_of_garray( _second ), 0.5*get_step_of_garray( _second ) ).dose;
+      _second_dose = find_point_in_garray( _second, _x2-get_step_of_garray( _second ), 0.5*get_step_of_garray( _second ) )->dose;
       _diff_m1 = abs1( _first_dose - _second_dose );
   
       //we check if the smallest from plus1 and minus1 is even smaller than original dose diff _diff_0
@@ -576,15 +738,15 @@ gdouble check_dta(  GArray* _second, point* _p )
 	  point _temp_point;
 	  _temp_garray = NULL;
   // we need to find every point in _second array that has the same dose value that checking point has,
-  // but there is no exact the same dose points, we have at least the one point that has sligtly less dose value
-  // and the next that has sligtly bigger. From those two points we need to calculate x value where dose
-  // is the same. This values (x, dose) we save in point structure.
+  // but there is no exact the same dose points, we have at least one point that has sligtly less dose value
+  // and the next that has sligtly bigger dose. From those two points we need to calculate x value where dose
+  // is the same. This values (x, dose) we store in point structure.
   // The amount of that kind of points can be several or quite more - if the graph is sharpen.
   //
   // Next step is to find one closest point and check its distance from the point we are evaluating
   // If the distance is less than dta, checked point meets criteria, otherwise not.
     _temp_garray = g_array_new( TRUE, TRUE, sizeof(point));
-    for( _i=0; _i<the_other_garray->len - 1; _i++)
+    for( _i=0; _i<_second->len - 1; _i++)
     {
           _pm = &g_array_index( _second, point, _i );
 
@@ -755,206 +917,6 @@ guint get_number_of_rows( GtkTreeView* _t )
 }
 
 
-void open_omnipro_accept_clicked(  )
-{
-  GtkWidget *_dialog;
-  gchar *_filename = NULL;
-  GString *_uri = NULL;
-  gchar *_contents = NULL;
-  gsize *_length = NULL;
-  GString *_temp_text = NULL;
-  guint64 _n_of_rows;
-
-  GFile *_opening_file = NULL;
-  GFileInputStream *_file_input = NULL;
-
-  guint64 _i, _n_of_columns;
-  gchar **_line_needed_splitted = NULL;
-  gdouble _var;
-
-  guint _temp_first_row;
-  omnipro_dataset _prev_omnipro_dataset;
-
-  _dialog = gtk_file_chooser_dialog_new ("Choose file to open",
-				      GTK_WINDOW(main_window),
-				      GTK_FILE_CHOOSER_ACTION_OPEN,
-				      "_Cancel", GTK_RESPONSE_CANCEL,
-				      "_Open", GTK_RESPONSE_ACCEPT,
-				      NULL);
-  gtk_file_chooser_set_action ( GTK_FILE_CHOOSER(_dialog), GTK_FILE_CHOOSER_ACTION_OPEN);
-  _uri = g_string_new( g_get_current_dir() );
-  g_string_append_printf( _uri, "/data" );
-  gtk_file_chooser_set_current_folder( GTK_FILE_CHOOSER(_dialog), _uri->str );
-  g_string_free( _uri, TRUE );
-
-  if (gtk_dialog_run (GTK_DIALOG (_dialog)) == GTK_RESPONSE_ACCEPT)
-  {
-    _filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (_dialog));
-    g_file_get_contents( (const gchar*) _filename, &_contents, _length, NULL );
-   
-    csv_splitted = g_strsplit ( _contents, "\n", G_MAXINT );
-    if( ! g_str_has_prefix ( csv_splitted[0], "ScanColor,ScanType,RadiationType,Energy,Medium" ) )
-    {
-      msg("Wrong file loaded\nShould begin with \"ScanColor,ScanType,RadiationType,Energy,Medium\"");
-      g_strfreev( csv_splitted );
-      gtk_widget_destroy( _dialog );
-      return;
-    }
-
-    n_of_csv_lines = g_strv_length( csv_splitted );
-    n_of_csv_sets = 0;
-    gtk_combo_box_text_remove_all( GTK_COMBO_BOX_TEXT(omnipro_combo_box_text) );
-    _temp_text = g_string_new ("");
-
-    gtk_widget_show( omnipro_la_1 );
-    gtk_widget_show( omnipro_combo_box_text );
-    gtk_widget_show( omnipro_button );
-    gtk_widget_show( omnipro_la_2 );
-    gtk_widget_show( omnipro_la_3 );
-    gtk_widget_show( omnipro_la_4 );
-    g_array_set_size( omnipro_graph.g, 0 );
-
-    g_array_set_size ( omnipro_sets_garray, 0 ); //now we need to identify sets
-    gtk_widget_queue_draw ( omnipro_da );
-
-    for( _i=0; _i<n_of_csv_lines; _i++ )
-    {
-      if( g_str_has_prefix ( csv_splitted[_i], ",Crossline(cm),Inline(cm),Depth(cm),Dose(%)" ) )
-      {
-        if( n_of_csv_sets > 0 ) //we have second , 3rd ... set 
-        {
-          _prev_omnipro_dataset.first_row = _temp_first_row;
-          _prev_omnipro_dataset.last_row = _i-1;
-          g_array_append_val ( omnipro_sets_garray, _prev_omnipro_dataset );
-        }
-        _temp_first_row = _i+2; //always for 1st 2nd 3rd ...
-        n_of_csv_sets++;
-
-        g_string_printf ( _temp_text, "%d. %s", n_of_csv_sets, csv_splitted[_i-1], NULL );
-        gtk_combo_box_text_insert_text( GTK_COMBO_BOX_TEXT(omnipro_combo_box_text), -1, _temp_text->str );
-      }
-
-    }
-    // we reached the end of a file and the last set must be added
-    _prev_omnipro_dataset.first_row = _temp_first_row;
-    _prev_omnipro_dataset.last_row = _i-1;
-    g_array_append_val ( omnipro_sets_garray, _prev_omnipro_dataset );
-
-    _n_of_rows = n_of_csv_lines - 1 - 2*n_of_csv_sets;
-
-    for ( _i=0; _i<n_of_csv_sets; _i++ )
-    {
-      _prev_omnipro_dataset = g_array_index ( omnipro_sets_garray, omnipro_dataset, _i );
-    }
-
-    g_string_printf ( _temp_text, "N of pts: %" G_GUINT64_FORMAT"; N of sets: %u;", _n_of_rows, n_of_csv_sets, NULL);
-    gtk_label_set_text( GTK_LABEL(omnipro_la_1), _temp_text->str );
-
-    g_string_free( _temp_text, TRUE );
-
-    g_free( _filename );
-    g_free( _contents );
-    g_free( _length );
-    gtk_widget_destroy( _dialog );
-  }
-  else
-  {
-    gtk_widget_destroy( _dialog );
-    return;
-  }
-
-}
-// end of open_omnipro_accept_clicked
-
-
-//-------------------------------------------------------------------//
-// this function loads 1D data from csv file
-// the file must be: x, dose_value formatted 
-// each line is read, distance between x should be 0.1 cm
-//-------------------------------------------------------------------//
-void open_1d_from_csv_clicked(  )
-{
-  GtkWidget*_dialog;
-  gchar*_filename = NULL;
-  GString*_uri = NULL;
-  gchar*_contents = NULL;
-  gsize*_length = NULL;
-  guint _n_of_rows;
-  gchar**_splitted_file;
-  gchar**_splitted_row;
-
-  GFile *_opening_file = NULL;
-  GFileInputStream *_file_input = NULL;
-
-  guint _i;
-  point _tp;
-
-  _dialog = gtk_file_chooser_dialog_new ("Choose file to open",
-				      GTK_WINDOW(main_window),
-				      GTK_FILE_CHOOSER_ACTION_OPEN,
-				      "_Cancel", GTK_RESPONSE_CANCEL,
-				      "_Open", GTK_RESPONSE_ACCEPT,
-				      NULL);
-  gtk_file_chooser_set_action ( GTK_FILE_CHOOSER(_dialog), GTK_FILE_CHOOSER_ACTION_OPEN);
-  _uri = g_string_new( g_get_current_dir() );
-  g_string_append_printf( _uri, "/data" );
-  gtk_file_chooser_set_current_folder( GTK_FILE_CHOOSER(_dialog), _uri->str );
-  g_string_free( _uri, TRUE );
-
-  if (gtk_dialog_run (GTK_DIALOG (_dialog)) == GTK_RESPONSE_ACCEPT)
-  {
-    _filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (_dialog));
-    g_file_get_contents( (const gchar*) _filename, &_contents, _length, NULL );
-   
-    _splitted_file = g_strsplit ( _contents, "\n", G_MAXINT );
-    _n_of_rows = g_strv_length( _splitted_file );
-    g_array_set_size( omnipro_graph.g, 0 );
-    omnipro_graph.type = GT_CROSSLINE;
-    for( _i=0;_i<_n_of_rows-1;_i++ )
-    {
-      _splitted_row = g_strsplit ( _splitted_file[_i], ",", G_MAXINT );
-      if( g_strv_length( _splitted_row ) < 1 )
-      { 
-        g_strfreev( _splitted_row );
-        g_strfreev( _splitted_file );
-        msg("Something is wrong with the length of some row...");
-        g_free( _filename );
-        g_free( _contents );
-        g_free( _length );
-        gtk_widget_destroy( _dialog );
-        g_array_set_size( omnipro_graph.g, 0 );
-        return;
-      }
-      _tp.x = g_ascii_strtod ( _splitted_row[0], NULL );
-      _tp.dose = g_ascii_strtod ( _splitted_row[1], NULL );
-      g_strfreev( _splitted_row );
-      g_array_append_val( omnipro_graph.g, _tp );
-    }
-    normalize_graph( omnipro_graph, NORM_TO_CENTER );
-    gtk_widget_queue_draw ( omnipro_da );
-    gtk_widget_hide( omnipro_la_1 );
-    gtk_widget_hide( omnipro_combo_box_text );
-    gtk_widget_hide( omnipro_button );
-    gtk_widget_hide( omnipro_la_2 );
-    gtk_widget_hide( omnipro_la_3 );
-    gtk_widget_hide( omnipro_la_4 );
-
-
-    g_strfreev( _splitted_file );
-    g_free( _filename );
-    g_free( _contents );
-    g_free( _length );
-    gtk_widget_destroy( _dialog );
-  }
-  else
-  {
-    gtk_widget_destroy( _dialog );
-    return;
-  }
-
-}
-// end of open_1d_from_csv_clicked
-
 //-------------------------------------------------------------------//
 // The next four are normalization functions from menu 
 //-------------------------------------------------------------------//
@@ -962,202 +924,71 @@ void menu_item_2d_normalize_to_max_clicked()
 {
   if(monaco_graph.g->len == 0){msg("No data loaded");return;}
   normalize_graph( monaco_graph, NORM_TO_MAX );
+  are_calculations_current = FALSE;
   gtk_widget_queue_draw ( monaco_da );
+  gtk_widget_queue_draw ( compare_da );
 }
 
 void menu_item_2d_normalize_to_center_clicked()
 {
   if(monaco_graph.g->len == 0){msg("No data loaded");return;}
   normalize_graph( monaco_graph, NORM_TO_CENTER );
+  are_calculations_current = FALSE;
   gtk_widget_queue_draw ( monaco_da );
+  gtk_widget_queue_draw ( compare_da );
 }
 
 void menu_item_1d_normalize_to_max_clicked()
 {
   if(omnipro_graph.g->len == 0){msg("No data loaded");return;}
   normalize_graph( omnipro_graph, NORM_TO_MAX );
+  are_calculations_current = FALSE;
   gtk_widget_queue_draw ( omnipro_da );
+  gtk_widget_queue_draw ( compare_da );
 }
 
 void menu_item_1d_normalize_to_center_clicked()
 {
   if(omnipro_graph.g->len == 0){msg("No data loaded");return;}
   normalize_graph( omnipro_graph, NORM_TO_CENTER );
+  are_calculations_current = FALSE;
   gtk_widget_queue_draw ( omnipro_da );
+  gtk_widget_queue_draw ( compare_da );
 }
-
-
-//-------------------------------------------------------------------//
-// Function operates on csv_splitted array, the garray should be created first
-// function creates omnipro_garray filled with point structures.
-//-------------------------------------------------------------------//
-void get_omnipro_dataset_clicked()
-{
-  GString *_temp_text = NULL;
-  guint _n_of_rows;
-
-  guint _i, _n_of_columns, _n_series;
-  gchar **_line_splitted = NULL;
-  gdouble _var;
-
-  guint _temp_first_row;
-  omnipro_dataset _set;
-  point _temp_point;
-
-  _temp_text = g_string_new("");
-  g_string_append( _temp_text, gtk_combo_box_text_get_active_text( GTK_COMBO_BOX_TEXT(omnipro_combo_box_text)) );
-  
-  if( _temp_text->len > 3 )
-  {
-    _line_splitted = g_strsplit( _temp_text->str, ".", -1 );
-    _n_series = g_ascii_strtoull( _line_splitted[0], NULL, 10 );
-    if( g_strrstr( _temp_text->str, "Crossline" ) != NULL )omnipro_graph.type = GT_CROSSLINE;
-    if( g_strrstr( _temp_text->str, "Inline" ) != NULL )omnipro_graph.type = GT_INLINE;
-    if( g_strrstr( _temp_text->str, "Depth Dose" ) != NULL )omnipro_graph.type = GT_DEPTH;
-    g_strfreev( _line_splitted );
-    // now is time to get appropriate data
-    if( omnipro_graph.type == GT_UNDEFINED)
-    {
-      msg("Something is wrong with the type of dataset.\nIt is neither inline, crossline or depth dose.");
-      g_string_free( _temp_text, TRUE );
-      return;
-    }    
-    _set = g_array_index( omnipro_sets_garray, omnipro_dataset, _n_series-1 );
-    g_array_set_size ( omnipro_graph.g, 0 ); 
-
-    for( _i=_set.first_row; _i<=_set.last_row; _i++ )
-    {
-      _line_splitted = g_strsplit( csv_splitted[_i-1], ",", -1 );
-      _temp_point.x = g_ascii_strtod ( _line_splitted[omnipro_graph.type], NULL );
-      _temp_point.dose = g_ascii_strtod ( _line_splitted[4], NULL );
-
-      g_array_append_val( omnipro_graph.g, _temp_point );
-    }
-    g_string_printf ( _temp_text, "Currently loaded set: %d" ,_n_series );
-    gtk_label_set_text( GTK_LABEL(omnipro_la_2), _temp_text->str );
-    g_string_printf ( _temp_text, "N of points in set: %d", omnipro_graph.g->len );
-    gtk_label_set_text( GTK_LABEL(omnipro_la_3), _temp_text->str );
-    g_string_printf ( _temp_text, "Step: %.3f", get_step_of_garray(omnipro_graph.g) );
-    gtk_label_set_text( GTK_LABEL(omnipro_la_4), _temp_text->str );
-  }
-
-  if((omnipro_graph.type==GT_CROSSLINE) || (omnipro_graph.type == GT_INLINE)) //we have xy column
-  {
-    normalize_graph( omnipro_graph, NORM_TO_CENTER );
-  }
-  else if( (omnipro_graph.type==GT_DEPTH) ) //we are in some depth plane - column is depth dose
-  {
-    normalize_graph( omnipro_graph, NORM_TO_MAX );
-  }
-
-  g_string_free( _temp_text, TRUE );
-
-  gtk_widget_queue_draw ( omnipro_da );
-}
-//end of get_omnipro_dataset_clicked
 
 
 
 void main_quit()
 {
   if( lines_splitted)  g_strfreev( lines_splitted );
-  g_array_free ( monaco_graph.g, TRUE );
-  g_array_free ( omnipro_graph.g, TRUE );
-  g_array_free ( checked_garray_trimmed, TRUE );
-//?  g_array_free ( the_other_garray, TRUE );
-  if(plane) g_free(plane);
+  if( monaco_graph.g )g_array_free ( monaco_graph.g, TRUE );
+  if( omnipro_graph.g )g_array_free ( omnipro_graph.g, TRUE );
+  if( omnipro_sets_garray )g_array_free ( omnipro_sets_garray, TRUE );
+  if( plane ) g_free( plane );
   gtk_main_quit();
 }
 
 
-void draw_garray( GArray* _g, GArray* _g2, guint _w, guint _h, guint _x, guint _y, cairo_t *_cr, gboolean _dots )
+void draw_garray( guint _w, guint _h, guint _x, guint _y, cairo_t *_cr )
 {
-  guint _i;
-  GdkRGBA _c1; // ok dots
-  GdkRGBA _c2; // not ok dots
-  gdouble _max;
-  gdouble _100_percent; // normalization value
-  point _point;
+//  guint _i;
 
-  GString *_temp_text = NULL;
-  _temp_text = g_string_new ("");
+  graph*_g  = &monaco_graph;
+  graph*_g2 = &omnipro_graph;
 
-  guint _num_of_lines = 0;
-  gdouble _var;
+//  guint _num_of_lines = 0;
+//  gdouble _var;
 
   draw_background( _cr, _w, _h, _x, _y ); 
 
+  draw_graph( &monaco_graph, _cr, _w, _h, _x, _y );
+  draw_graph( &omnipro_graph, _cr, _w, _h, _x, _y );
+  draw_dots( &omnipro_graph, _cr, _w, _h, _x, _y );
 
-  if ( _g ) 
-  {
-    if ( _g->len != 0 ) 
-    {
-      gdk_rgba_parse( &_c1, "navy" );
-      gdk_rgba_parse( &_c2, "red" );
-      _point = g_array_index( _g, point, 0 );
-
-      // move to first point              // 15 should be on 0.8*_width*0.5
-      cairo_set_line_width( _cr, 1 );
-      cairo_move_to ( _cr, 0.5*_w + g_array_index( _g, point, 0 ).x * _w *0.8*0.5 / (15.0) + _x,
-                           _h*0.9 - g_array_index( _g, point, 0 ).dose *0.01 * 0.8 * _h + _y );
-
-      for(_i=1; _i<_g->len; _i++ )
-      {
-        cairo_line_to( _cr, 0.5*_w + g_array_index( _g, point, _i ).x * _w*0.8*0.5 / (15.0) + _x,
-                            _h*0.9 - g_array_index( _g, point, _i ).dose *0.01 * 0.8 * _h + _y );
-      }
-
-      gdk_cairo_set_source_rgba (_cr, &global_options.color_1 );
-      cairo_stroke ( _cr );
-
-      if( _dots )
-      {
-        cairo_set_line_width( _cr, 2 );
-        if(( g_array_index( _g, point, 0 ).result < 1) && (g_array_index( _g, point, 0 ).result >= 0) )
-                                      gdk_cairo_set_source_rgba (_cr, &_c1);//good
-        else gdk_cairo_set_source_rgba (_cr, &_c2);//bad
-        cairo_arc( _cr, 0.5*_w + g_array_index( _g, point, 0 ).x * _w *0.8*0.5 / (15.0) + _x,
-                        _h*0.9 - g_array_index( _g, point, 0 ).dose*0.01 * 0.8 * _h + _y, 1., 0., 2 * G_PI);
-        cairo_stroke ( _cr );
-        for(_i=1; _i<_g->len; _i++ )
-        {
-          if(( g_array_index( _g, point, _i ).result < 1) && (g_array_index( _g, point, 0 ).result >= 0) )
-                                      gdk_cairo_set_source_rgba (_cr, &_c1);//good
-          else gdk_cairo_set_source_rgba (_cr, &_c2);//bad
-
-          cairo_arc( _cr, 0.5*_w + g_array_index( _g, point, _i ).x * _w*0.8*0.5 / (15.0) + _x,
-                          _h*0.9 - g_array_index( _g, point, _i ).dose*0.01 * 0.8 * _h + _y, 1., 0., 2 * G_PI);
-          cairo_stroke ( _cr );
-
-        }
-      }
-    }
-  }
-
-  if ( _g2 ) 
-  {
-    if ( _g2->len != 0 ) 
-    {
-      _point = g_array_index( _g2, point, 0 );
-
-      // move to first point              // 15 should be on 0.8*_width*0.5
-      cairo_set_line_width( _cr, 1 );
-      cairo_move_to ( _cr, 0.5*_w + g_array_index( _g2, point, 0 ).x * _w *0.8*0.5 / (15.0) + _x,
-                           _h*0.9 - g_array_index( _g2, point, 0 ).dose *0.01 * 0.8 * _h + _y );
-
-      for(_i=1; _i<_g2->len; _i++ )
-      {
-        cairo_line_to( _cr, 0.5*_w + g_array_index( _g2, point, _i ).x * _w*0.8*0.5 / (15.0) + _x,
-                            _h*0.9 - g_array_index( _g2, point, _i ).dose *0.01 * 0.8 * _h + _y );
-      }
-
-      gdk_cairo_set_source_rgba (_cr, &global_options.color_2 );
-      cairo_stroke ( _cr );
-    }
-  }
-  g_string_free( _temp_text , TRUE );
 }
 
+// preview of imported 2d plane
+// not implemented yet
 void m_2d_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
 {
   GdkRGBA _color;
@@ -1188,83 +1019,112 @@ void m_2d_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
 
 void monaco_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
 {
-  draw_garray( monaco_graph.g, NULL, gtk_widget_get_allocated_width (_widget),
-                                    gtk_widget_get_allocated_height (_widget),
-                                    0, 0, _cr, FALSE );
+  gint _w  = gtk_widget_get_allocated_width (_widget);
+  gint _h = gtk_widget_get_allocated_height (_widget);
+  draw_background( _cr, _w, _h, 0, 0 );
+  draw_graph( &monaco_graph, _cr, _w, _h, 0, 0 );
+  draw_fwhm_txt( &monaco_graph, _cr, _w, _h, 0, 0, "2D FWHM" );
+  draw_fwhm_line( &monaco_graph, _cr, _w, _h, 0, 0 );
+
+//  draw_garray( gtk_widget_get_allocated_width (_widget),
+//                                    gtk_widget_get_allocated_height (_widget),
+//                                    0, 0, _cr );
 }
 
 void omnipro_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
 {
-  draw_garray( omnipro_graph.g, NULL, gtk_widget_get_allocated_width (_widget),
-                                      gtk_widget_get_allocated_height (_widget),
-                                      0, 0, _cr, FALSE );
+  gint _w  = gtk_widget_get_allocated_width (_widget);
+  gint _h = gtk_widget_get_allocated_height (_widget);
+  draw_background( _cr, _w, _h, 0, 0 );
+  draw_graph( &omnipro_graph, _cr, _w, _h, 0, 0 );
+  draw_fwhm_txt( &omnipro_graph, _cr, _w, _h, 0, 0, "1D FWHM" );
+  draw_fwhm_line( &omnipro_graph, _cr, _w, _h, 0, 0 );
+//  draw_garray( gtk_widget_get_allocated_width (_widget),
+//                                      gtk_widget_get_allocated_height (_widget),
+//                                      0, 0, _cr );
 }
 
 void compare_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
 {
-  draw_garray( checked_garray_trimmed, the_other_garray, gtk_widget_get_allocated_width (_widget),
-                                                         gtk_widget_get_allocated_height (_widget),
-                                                         0, 0, _cr, TRUE );
+  gint _w  = gtk_widget_get_allocated_width (_widget);
+  gint _h = gtk_widget_get_allocated_height (_widget);
+  draw_background( _cr, _w, _h, 0, 0 ); 
+  if( are_calculations_current )
+  {
+    graph*_tested_g;
+    graph*_other_g;
+
+    if( gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(compare_rb_1)) )
+    {
+      _tested_g = &monaco_graph;
+      _other_g  = &omnipro_graph;
+    }
+    else
+    {
+      _tested_g = &omnipro_graph;
+      _other_g  = &monaco_graph;
+    }
+
+    draw_graph( &omnipro_graph, _cr, _w, _h, 0, 0 );
+    draw_graph( &monaco_graph, _cr, _w, _h, 0, 0 );
+    draw_dots( _tested_g, _cr, _w, _h, 0, 0 );
+    draw_fwhm_txt( &omnipro_graph, _cr, _w, _h, 0, 0, "1D FWHM" );
+    draw_fwhm_line( &omnipro_graph, _cr, _w, _h, 0, 0 );
+    draw_fwhm_txt( &monaco_graph, _cr, _w, _h, 0, 15, "2D FWHM" );
+    draw_fwhm_line( &monaco_graph, _cr, _w, _h, 0, 0 );
+  }
+//  draw_garray( gtk_widget_get_allocated_width (_widget),
+//                                      gtk_widget_get_allocated_height (_widget),
+//                                      0, 0, _cr );
 }
 
 
-void compare_button_clicked(  )
+void compare_button_clicked()
 {
-  if ( omnipro_graph.g == NULL ) {msg("No omnipro data loaded");return;} 
-  if ( omnipro_graph.g->len == 0 ) {msg("No omnipro data loaded");return;}
-  if ( monaco_graph.g == NULL ) {msg("No monaco data loaded");return;} 
-  if ( monaco_graph.g->len == 0 ) {msg("No monaco data loaded");return;}
-   
+  if( omnipro_graph.g->len == 0 || monaco_graph.g->len == 0 )
+  { // if one of array is empty, draw result anyway
+    gtk_widget_queue_draw( compare_da );
+    return;
+  }
+
   if( !( (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(monaco_rb_1)) &&
                      ((omnipro_graph.type == GT_CROSSLINE) || (omnipro_graph.type == GT_INLINE)) )
           ||( ( gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(monaco_rb_2)) || gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(monaco_rb_3)) ) &&
               (omnipro_graph.type == GT_DEPTH)) ) ){msg("Cannot compare different types of data");return;};
   
   if( abs1((get_step_of_garray(monaco_graph.g) / get_step_of_garray(omnipro_graph.g)) - 1.0) >= 0.001 )
-             {msg("For now step size of each array should be the same.\nThis will be changed in the future.");return;}
+             { msg("For now step size of each array should be the same.\nThis will be changed in the future.");return; }
 
   gdouble _step = MIN( get_step_of_garray(monaco_graph.g), get_step_of_garray(omnipro_graph.g) );
   if( _step == 0 ) {msg("Something is wrong with the step of an array.");return;}
-  guint _i;
-  gdouble _new_garray_min = MAX( min_x_from_garray( monaco_graph.g ),
-                                 min_x_from_garray( omnipro_graph.g ) );
-  gdouble _new_garray_max = MIN( max_x_from_garray( monaco_graph.g ),
-                                 max_x_from_garray( omnipro_graph.g ) );
-  guint _n_of_points = ( _new_garray_max - _new_garray_min ) * 10;
+  gdouble _d;
+  gdouble _min_tested_x = min_common_x( &monaco_graph, &omnipro_graph );
+  gdouble _max_tested_x = max_common_x( &monaco_graph, &omnipro_graph );
+//  guint _n_of_points = ( _max_tested_x - _min_tested_x ) * 10;
   gdouble _temp_dta;
 
-  point _point;
+  graph*_tested_g;
+  graph*_other_g;
 
-  g_array_set_size ( checked_garray_trimmed, 0 );
-  GArray* _tested_garray;
-
-  // do we want to check 1vs2 or 2vs1 ?
   if( gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(compare_rb_1)) )
   {
-    _tested_garray = monaco_graph.g;
-    the_other_garray = omnipro_graph.g;
+    _tested_g = &monaco_graph;
+    _other_g  = &omnipro_graph;
   }
   else
   {
-    _tested_garray = omnipro_graph.g;
-    the_other_garray = monaco_graph.g;
+    _tested_g = &omnipro_graph;
+    _other_g  = &monaco_graph;
   }
 
-  for( _i=0; _i<=_n_of_points; _i++ )
+  reset_graph_calculations( _tested_g );
+  for( _d=_min_tested_x; _d<=_max_tested_x; _d=_d+get_step_of_garray(_tested_g->g) )
   { 
-    _point.x = _new_garray_min + _i*_step;
-    _point.dose = find_point_in_garray( _tested_garray, _point.x, 0.5*get_step_of_garray(_tested_garray) ).dose;
-    g_array_append_val( checked_garray_trimmed, _point );
-  }
-  trim_garray( the_other_garray, min_x_from_garray(checked_garray_trimmed), max_x_from_garray(checked_garray_trimmed));
-  // now we have sommething we want to check
-  for( _i=0; _i<=checked_garray_trimmed->len; _i++ )
-  { 
-    _point = g_array_index( checked_garray_trimmed, point, _i );
-    _temp_dta = check_dta( the_other_garray, &g_array_index( checked_garray_trimmed, point, _i ) );
-    g_array_index( checked_garray_trimmed, point, _i ).result = _temp_dta;
+    _temp_dta = check_dta( _other_g->g, find_point_in_garray( _tested_g->g, _d, 0.05 ) );
+    find_point_in_garray( _tested_g->g, _d, 0.05 )->result = _temp_dta;
     if( _temp_dta == -1 ){ msg("Something went wrong while dta calculations.\n"); break; }
   }
+  are_calculations_current = TRUE;
   gtk_widget_queue_draw ( compare_da );
 }
 
@@ -1277,23 +1137,37 @@ gboolean compare_doses( gdouble _d1, gdouble _d2, gdouble _sensitivity )
 
 gboolean compare_da_press (GtkWidget *_widget, GdkEvent  *_event, gpointer   user_data)
 {
-  if( !checked_garray_trimmed ) return TRUE;
+  graph*_tested_g;
+  graph*_other_g;
+
+  // do we want to check 1vs2 or 2vs1 ?
+  if( gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(compare_rb_1)) )
+  {
+    _tested_g = &monaco_graph;
+    _other_g  = &omnipro_graph;
+  }
+  else
+  {
+    _tested_g = &omnipro_graph;
+    _other_g  = &monaco_graph;
+  }
+  if( _tested_g->g->len==0 || _other_g->g->len==0 ) return TRUE;
   GString* _text;
   gint _w = gtk_widget_get_allocated_width  (_widget);
   gint _h = gtk_widget_get_allocated_height (_widget);
-  point _p;
+  point*_p;
 
   gdouble _dose_from_garray, _dose_from_da;
   gdouble _x_cm = ((gdouble)((GdkEventButton*)_event)->x/(gdouble)_w)*37.5 -18.75;
-  _p = find_point_in_garray( checked_garray_trimmed, _x_cm, 0.5*get_step_of_garray( checked_garray_trimmed ) );
-  _dose_from_garray = _p.dose;
+  _p = find_point_in_garray( _tested_g->g, _x_cm, 0.5*get_step_of_garray( _tested_g->g ) );
+  _dose_from_garray = _p->dose;
   _dose_from_da = 112.5 - (((GdkEventButton*)_event)->y * 125)/(gdouble)_h;
 
 
   if( compare_doses( _dose_from_garray, _dose_from_da, 0.7) )
   {
     _text = g_string_new("");
-    g_string_append_printf( _text, "x: %.1fcm; dose: %.2f%% %s", _x_cm, _dose_from_da, _p.desc, NULL );
+    if(_p->desc) g_string_append_printf( _text, "x: %.1fcm; dose: %.2f%% %s", _x_cm, _dose_from_da, _p->desc, NULL );
     gtk_label_set_text( GTK_LABEL(msg_label), _text->str );
     g_string_free ( _text, TRUE );
     return TRUE; 
@@ -1313,9 +1187,6 @@ gint main( gint argc, gchar **argv )
   omnipro_graph.type = GT_UNDEFINED;
 
   omnipro_sets_garray = g_array_new (TRUE, TRUE, sizeof (omnipro_dataset));
-  checked_garray_trimmed = g_array_new(TRUE, TRUE, sizeof (point));
-  the_other_garray = g_array_new(TRUE, TRUE, sizeof (point));
-
   load_options();
 
   // Creating window with box in it
@@ -1323,7 +1194,6 @@ gint main( gint argc, gchar **argv )
   main_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_default_size( GTK_WINDOW(main_window), 800, 670 );
   gtk_window_set_title (GTK_WINDOW(main_window), PACKAGE_STRING );
-//  gtk_window_set_default_icon_from_file( "icon.png", NULL );
   gtk_window_set_icon_name (GTK_WINDOW (main_window), "document-open");
 
   main_box = gtk_box_new( GTK_ORIENTATION_VERTICAL, 4 );//menu + hhpaned
@@ -1332,6 +1202,35 @@ gint main( gint argc, gchar **argv )
   main_hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0); //hhbox + comp_vbox
 
   hhbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2); //monaco_vbox + omnipro_vbox + compare_hbox
+
+  omnipro_frame = gtk_frame_new("One dimmentional data: "); //omnipro_hbox
+  gtk_container_set_border_width( GTK_CONTAINER(omnipro_frame), 2 );
+
+    omnipro_vbox_menu = gtk_box_new( GTK_ORIENTATION_VERTICAL, 2 );  //omnipro_la_1 + ...
+
+      omnipro_la_1 = gtk_label_new ("N of pts: ;N of sets: ;");
+      omnipro_combo_box_text = gtk_combo_box_text_new_with_entry ();
+      omnipro_button = gtk_button_new_with_label("Get selected dataset");
+      g_signal_connect( omnipro_button, "clicked", G_CALLBACK( get_omnipro_dataset_clicked ), NULL ); 
+      omnipro_la_2 = gtk_label_new ("Currently loaded set: ");
+      omnipro_la_3 = gtk_label_new ("N of points in set: ");
+      omnipro_la_4 = gtk_label_new ("Step: ");
+      omnipro_da = gtk_drawing_area_new ();
+      gtk_widget_set_size_request (omnipro_da, 100, 100);
+
+      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_la_1, FALSE, FALSE, 0 );
+      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_combo_box_text, FALSE, FALSE, 0 );
+      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_button, FALSE, FALSE, 0 );
+      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_la_2, FALSE, FALSE, 0 );//currenty loaded
+      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_la_3, FALSE, FALSE, 0 );//N of points
+      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_la_4, TRUE, FALSE, 0 );//Step
+      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_da, FALSE, FALSE, 0 );
+
+  gtk_container_add( GTK_CONTAINER(omnipro_frame), omnipro_vbox_menu );
+  gtk_box_pack_start( GTK_BOX(hhbox), omnipro_frame, FALSE, FALSE, 2 );
+
+
+
 
   monaco_frame = gtk_frame_new("Two dimmentional plane: "); 
   gtk_container_set_border_width( GTK_CONTAINER(monaco_frame), 2 );
@@ -1396,36 +1295,9 @@ gint main( gint argc, gchar **argv )
   gtk_box_pack_start( GTK_BOX(hhbox), monaco_frame, FALSE, FALSE, 2 );
 
 
-  omnipro_frame = gtk_frame_new("One dimmentional data: "); //omnipro_hbox
-  gtk_container_set_border_width( GTK_CONTAINER(omnipro_frame), 2 );
-
-    omnipro_vbox_menu = gtk_box_new( GTK_ORIENTATION_VERTICAL, 2 );  //omnipro_la_1 + ...
-
-      omnipro_la_1 = gtk_label_new ("N of pts: ;N of sets: ;");
-      omnipro_combo_box_text = gtk_combo_box_text_new_with_entry ();
-      omnipro_button = gtk_button_new_with_label("Get selected dataset");
-      g_signal_connect( omnipro_button, "clicked", G_CALLBACK( get_omnipro_dataset_clicked ), NULL ); 
-      omnipro_la_2 = gtk_label_new ("Currently loaded set: ");
-      omnipro_la_3 = gtk_label_new ("N of points in set: ");
-      omnipro_la_4 = gtk_label_new ("Step: ");
-      omnipro_da = gtk_drawing_area_new ();
-      gtk_widget_set_size_request (omnipro_da, 100, 100);
-
-      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_la_1, FALSE, FALSE, 0 );
-      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_combo_box_text, FALSE, FALSE, 0 );
-      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_button, FALSE, FALSE, 0 );
-      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_la_2, FALSE, FALSE, 0 );//currenty loaded
-      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_la_3, FALSE, FALSE, 0 );//N of points
-      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_la_4, TRUE, FALSE, 0 );//Step
-      gtk_box_pack_start( GTK_BOX(omnipro_vbox_menu), omnipro_da, FALSE, FALSE, 0 );
-
-  gtk_container_add( GTK_CONTAINER(omnipro_frame), omnipro_vbox_menu );
-  gtk_box_pack_start( GTK_BOX(hhbox), omnipro_frame, FALSE, FALSE, 2 );
-
-
 
   compare_hbox = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
-      compare_button = gtk_button_new_with_label("Compare");
+      compare_button = gtk_button_new_with_label("Compare/\nDraw");
       gtk_box_pack_start( GTK_BOX(compare_hbox), compare_button, TRUE, TRUE, 2 );
       g_signal_connect( compare_button, "clicked", G_CALLBACK( compare_button_clicked ), NULL );
       compare_rb_1 = gtk_radio_button_new_with_label ( NULL, "1vs2");
@@ -1461,11 +1333,11 @@ gint main( gint argc, gchar **argv )
   // Menu:
   menu_item_file = gtk_menu_item_new_with_label( "File" );
   gtk_menu_shell_append( GTK_MENU_SHELL( main_menu_bar ), menu_item_file );
-   menu_item_monaco = gtk_menu_item_new_with_label( "2D data" );
-  gtk_menu_shell_append( GTK_MENU_SHELL( main_menu_bar ), menu_item_monaco );
   menu_item_omnipro = gtk_menu_item_new_with_label( "1D data" );
   gtk_menu_shell_append( GTK_MENU_SHELL( main_menu_bar ), menu_item_omnipro );
- 
+  menu_item_monaco = gtk_menu_item_new_with_label( "2D data" );
+  gtk_menu_shell_append( GTK_MENU_SHELL( main_menu_bar ), menu_item_monaco );
+
   menu_file = gtk_menu_new();
     menu_item_options = gtk_menu_item_new_with_label( "Options" );
     menu_item_report = gtk_menu_item_new_with_label( "Print/view report" );

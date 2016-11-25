@@ -29,7 +29,7 @@ typedef struct
 {
   gdouble x;
   gdouble dose;
-  gdouble result; //filled after comparing two arrays
+  gdouble result; //filled after comparing two arrays  1-ok
   gchar* desc; //filled while evaluating an algorithm, for debugging or showing how it works
 } point;
 
@@ -37,10 +37,10 @@ typedef struct
 {
   GArray* g;
   guint type;
+  gdouble first_50; //the points where dose is 50 percent
+  gdouble second_50;
 } graph;
 
-//guint monaco_graph_type;
-//guint csv_graph_type; // crossline--1 inline--2; undefined--0; depth--3;
 
 //graph type
 #define  GT_UNDEFINED 0
@@ -154,13 +154,14 @@ guint n_of_csv_sets;
 // global graphs
 graph monaco_graph;
 graph omnipro_graph;
+gboolean are_calculations_current = FALSE; // this indicates if we should draw compare_da
 
 // Arrays with point structures (most of them)
 //GArray *monaco_garray = NULL; 
 //GArray *omnipro_points_garray = NULL; // with points
 GArray *omnipro_sets_garray = NULL; // with omnipro_datasets
-GArray *checked_garray_trimmed = NULL; // this it the array we want to compare, filled with points
-GArray *the_other_garray = NULL; // this is the array we want to compare to, filled with points
+//GArray *checked_garray_trimmed = NULL; // this it the array we want to compare, filled with points
+//GArray *the_other_garray = NULL; // this is the array we want to compare to, filled with points
 
 // FUNCTIONS //
 
@@ -172,6 +173,11 @@ void get_monaco_column_clicked(  );
 void open_omnipro_imrt_plane_clicked(  );
 
 void draw_background( cairo_t *_cr, guint _width, guint _height, guint _x, guint _y );
+void draw_graph( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y );
+void draw_dots ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y );
+void draw_fwhm_txt ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y, char*_txt );
+void draw_fwhm_line ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y );
+void draw_garray( guint, guint, guint, guint, cairo_t* );
 
 static void begin_print( GtkPrintOperation *operation, GtkPrintContext *context, gpointer user_data );
 static void draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_nr, gpointer user_data );
@@ -190,12 +196,18 @@ void color2_changed( GtkColorButton *_widget, gpointer   user_data );
 gboolean compare_doses( gdouble _d1, gdouble _d2, gdouble _sensitivity );
 gdouble abs1( gdouble );
 void trim_garray( GArray* _g, gdouble _min, gdouble _max);
-gint get_number_of_good_points_in_array( GArray* _g );
-point find_point_in_garray( GArray* _g, gdouble _x, gdouble _s );//we give x value and function
+gint get_number_of_good_points_in_graph( graph*_g );
+gint get_number_of_checked_points_in_graph( graph*_g );
+void reset_graph_calculations( graph*_g );
+void invert_graph( graph*_g );
+point* find_point_in_garray( GArray* _g, gdouble _x, gdouble _s );//we give x value and function
                                                           // returns dose for given x from _g, _s is sensitivity
 gdouble check_dta( GArray* , point* ); //we check the point 
                                                    //from _checked_garray_trimmed against _second garray points,
                                                    //according to defined agreements
+gdouble min_common_x( graph*_g1, graph*_g2 );
+gdouble max_common_x( graph*_g1, graph*_g2 );
+void calculate_fwhm( graph*_g );
 gdouble get_step_of_garray( GArray* );
 void normalize_graph(  graph, guint _norm_type );
 gdouble max_x_from_garray( GArray* );
@@ -203,7 +215,6 @@ gdouble max_dose_from_garray( GArray* );
 gdouble min_x_from_garray( GArray* );
 static void msg( const gchar * );
 gboolean is_it_number( const gchar * );
-void draw_garray( GArray*, GArray*, guint, guint, guint, guint, cairo_t*, gboolean );
 
 void open_omnipro_accept_clicked(  );
 void open_1d_from_csv_clicked(  );
