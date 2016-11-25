@@ -258,7 +258,7 @@ top_srcdir = @top_srcdir@
 #AM_CPPFLAGS = $(GTK_CFLAGS)
 AM_CFLAGS = $(GTK_CFLAGS)
 dta1d_SOURCES = project.c \
-                project.h
+                project.h 
 
 dta1d_LDADD = $(GTK_LIBS)
 all: all-am
