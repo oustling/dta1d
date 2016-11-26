@@ -171,6 +171,8 @@ void open_1d_from_csv_clicked(  )
       }
       _tp.x = g_ascii_strtod ( _splitted_row[0], NULL );
       _tp.dose = g_ascii_strtod ( _splitted_row[1], NULL );
+      _tp.result = -1;
+      _tp.desc = NULL;
       g_strfreev( _splitted_row );
       g_array_append_val( omnipro_graph.g, _tp );
     }

@@ -81,12 +81,14 @@ GtkWidget *menu_item_save_monaco_graph;
 GtkWidget *menu_item_open_omnipro_imrt_plane;
 GtkWidget *menu_item_2d_normalize_to_max;
 GtkWidget *menu_item_2d_normalize_to_center;
+GtkWidget *menu_item_2d_clear;
 
 GtkWidget *menu_omnipro;
 GtkWidget *menu_item_open_omnipro_accept;
 GtkWidget *menu_item_open_1d_from_csv;
 GtkWidget *menu_item_1d_normalize_to_max;
 GtkWidget *menu_item_1d_normalize_to_center;
+GtkWidget *menu_item_1d_clear;
 //end of menu
 
 GtkWidget *hhbox;
@@ -177,7 +179,6 @@ void draw_graph( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y 
 void draw_dots ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y );
 void draw_fwhm_txt ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y, char*_txt );
 void draw_fwhm_line ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y );
-void draw_garray( guint, guint, guint, guint, cairo_t* );
 
 static void begin_print( GtkPrintOperation *operation, GtkPrintContext *context, gpointer user_data );
 static void draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_nr, gpointer user_data );
@@ -220,6 +221,8 @@ void open_omnipro_accept_clicked(  );
 void open_1d_from_csv_clicked(  );
 void get_omnipro_dataset_clicked(  );
 void compare_button_clicked(  );
+void menu_item_2d_clear_clicked();
+void menu_item_1d_clear_clicked();
 
 void monaco_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data );
 void omnipro_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data );

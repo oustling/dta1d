@@ -20,6 +20,9 @@ gint round1 (gdouble _a){
 //-------------------------------------------------------------------//
 gint get_number_of_good_points_in_graph( graph*_g )
 {
+  if( _g == 0 )return 0;
+  if( _g->g == 0 )return 0;
+  if( _g->g->len == 0 )return 0;
   gint _i;
   gint _j = 0;
 
@@ -36,6 +39,9 @@ gint get_number_of_good_points_in_graph( graph*_g )
 //-------------------------------------------------------------------//
 gint get_number_of_checked_points_in_graph( graph*_g )
 {
+  if( _g == 0 )return 0;
+  if( _g->g == 0 )return 0;
+  if( _g->g->len == 0 )return 0;
   gint _i;
   gint _j = 0;
 
@@ -51,8 +57,11 @@ gint get_number_of_checked_points_in_graph( graph*_g )
 //-------------------------------------------------------------------//
 void reset_graph_calculations( graph*_g )
 {
+  if( _g == 0 )return;
+  if( _g->g == 0 )return;
+  if( _g->g->len == 0 )return;
   gint _i;
-  for( _i=0; _i<=_g->g->len; _i++ )
+  for( _i=0; _i<_g->g->len; _i++ )
   {
     g_array_index( _g->g, point, _i ).result = -1;
     if( g_array_index( _g->g, point, _i ).desc )
@@ -61,6 +70,9 @@ void reset_graph_calculations( graph*_g )
       g_array_index( _g->g, point, _i ).desc = NULL;
     }
   }
+  _g->first_50 = 0;
+  _g->second_50 = 0;
+  _g->type = GT_UNDEFINED;
 }
 
 //-------------------------------------------------------------------//
@@ -68,6 +80,9 @@ void reset_graph_calculations( graph*_g )
 //-------------------------------------------------------------------//
 void invert_graph( graph*_g )
 {
+  if( _g == 0 )return;
+  if( _g->g == 0 )return;
+  if( _g->g->len == 0 )return;
   guint _n = _g->g->len;
   guint _i;
   GArray*_new;

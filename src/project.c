@@ -10,6 +10,8 @@
 //-------------------------------------------------------------------//
 void calculate_fwhm( graph*_g )
 {
+  if( _g == 0 )return;
+  if( _g->g == 0 )return;
   if( _g->g->len == 0 )return;
   if( _g->type == GT_DEPTH )return;
   point _p1, _p2, _p3, _p4;
@@ -425,13 +427,13 @@ void report_dialog( GtkMenuItem *_mi, gpointer _d )
 //-------------------------------------------------------------------//
 void about_dialog( GtkMenuItem *_mi, gpointer _d )
 {
-  gchar *authors[] = { "Arkadiusz Kowalski and others", NULL };
+//  gchar *authors[] = { "Arkadiusz Kowalski and others", NULL };
   gtk_show_about_dialog ( GTK_WINDOW( main_window),
                        "program-name", "dta1d",
                        "license-type", GTK_LICENSE_GPL_2_0,
                        "version", VERSION, 
                        "comments", "Program can be used in radiotherapy departments by physicists to perform some QA procedures. Program compares two dose profiles. Calculated in treatment planning system Monaco from Elekta and measured in water phantom by IBA OmniPro Accept.",
-                       "authors", authors,
+//                       "authors", authors,
                        "website", "https://github.com/oustling/dta1d", NULL );
 }
 
@@ -956,6 +958,21 @@ void menu_item_1d_normalize_to_center_clicked()
   gtk_widget_queue_draw ( compare_da );
 }
 
+void menu_item_2d_clear_clicked()
+{
+   reset_graph_calculations( &monaco_graph );
+   g_array_set_size( monaco_graph.g, 0 );
+   gtk_widget_queue_draw ( monaco_da );
+   gtk_widget_queue_draw ( compare_da );
+}
+
+void menu_item_1d_clear_clicked()
+{
+   reset_graph_calculations( &omnipro_graph );
+   g_array_set_size( omnipro_graph.g, 0 );
+   gtk_widget_queue_draw ( omnipro_da );
+   gtk_widget_queue_draw ( compare_da );
+}
 
 
 void main_quit()
@@ -968,24 +985,6 @@ void main_quit()
   gtk_main_quit();
 }
 
-
-void draw_garray( guint _w, guint _h, guint _x, guint _y, cairo_t *_cr )
-{
-//  guint _i;
-
-  graph*_g  = &monaco_graph;
-  graph*_g2 = &omnipro_graph;
-
-//  guint _num_of_lines = 0;
-//  gdouble _var;
-
-  draw_background( _cr, _w, _h, _x, _y ); 
-
-  draw_graph( &monaco_graph, _cr, _w, _h, _x, _y );
-  draw_graph( &omnipro_graph, _cr, _w, _h, _x, _y );
-  draw_dots( &omnipro_graph, _cr, _w, _h, _x, _y );
-
-}
 
 // preview of imported 2d plane
 // not implemented yet
@@ -1026,9 +1025,6 @@ void monaco_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
   draw_fwhm_txt( &monaco_graph, _cr, _w, _h, 0, 0, "2D FWHM" );
   draw_fwhm_line( &monaco_graph, _cr, _w, _h, 0, 0 );
 
-//  draw_garray( gtk_widget_get_allocated_width (_widget),
-//                                    gtk_widget_get_allocated_height (_widget),
-//                                    0, 0, _cr );
 }
 
 void omnipro_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
@@ -1039,9 +1035,7 @@ void omnipro_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
   draw_graph( &omnipro_graph, _cr, _w, _h, 0, 0 );
   draw_fwhm_txt( &omnipro_graph, _cr, _w, _h, 0, 0, "1D FWHM" );
   draw_fwhm_line( &omnipro_graph, _cr, _w, _h, 0, 0 );
-//  draw_garray( gtk_widget_get_allocated_width (_widget),
-//                                      gtk_widget_get_allocated_height (_widget),
-//                                      0, 0, _cr );
+
 }
 
 void compare_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
@@ -1073,9 +1067,6 @@ void compare_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
     draw_fwhm_txt( &monaco_graph, _cr, _w, _h, 0, 15, "2D FWHM" );
     draw_fwhm_line( &monaco_graph, _cr, _w, _h, 0, 0 );
   }
-//  draw_garray( gtk_widget_get_allocated_width (_widget),
-//                                      gtk_widget_get_allocated_height (_widget),
-//                                      0, 0, _cr );
 }
 
 
@@ -1100,7 +1091,6 @@ void compare_button_clicked()
   gdouble _d;
   gdouble _min_tested_x = min_common_x( &monaco_graph, &omnipro_graph );
   gdouble _max_tested_x = max_common_x( &monaco_graph, &omnipro_graph );
-//  guint _n_of_points = ( _max_tested_x - _min_tested_x ) * 10;
   gdouble _temp_dta;
 
   graph*_tested_g;
@@ -1297,7 +1287,7 @@ gint main( gint argc, gchar **argv )
 
 
   compare_hbox = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
-      compare_button = gtk_button_new_with_label("Compare/\nDraw");
+      compare_button = gtk_button_new_with_label("Compare");
       gtk_box_pack_start( GTK_BOX(compare_hbox), compare_button, TRUE, TRUE, 2 );
       g_signal_connect( compare_button, "clicked", G_CALLBACK( compare_button_clicked ), NULL );
       compare_rb_1 = gtk_radio_button_new_with_label ( NULL, "1vs2");
@@ -1352,15 +1342,17 @@ gint main( gint argc, gchar **argv )
 
   menu_monaco = gtk_menu_new();
     menu_item_open_monaco_plane = gtk_menu_item_new_with_label( "Open Monaco plane file" );
-    menu_item_save_monaco_graph = gtk_menu_item_new_with_label( "Export given Monaco graph" );
-    menu_item_open_omnipro_imrt_plane = gtk_menu_item_new_with_label( "Open OmniPro I'mRT plane file" );
-    menu_item_2d_normalize_to_max = gtk_menu_item_new_with_label( "Normalize to Dmax" );
-    menu_item_2d_normalize_to_center = gtk_menu_item_new_with_label( "Normalize to center" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_open_monaco_plane );
+    menu_item_save_monaco_graph = gtk_menu_item_new_with_label( "Export given Monaco graph" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_save_monaco_graph );
+    menu_item_open_omnipro_imrt_plane = gtk_menu_item_new_with_label( "Open OmniPro I'mRT plane file" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_open_omnipro_imrt_plane );
+    menu_item_2d_normalize_to_max = gtk_menu_item_new_with_label( "Normalize to Dmax" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_2d_normalize_to_max );
+    menu_item_2d_normalize_to_center = gtk_menu_item_new_with_label( "Normalize to center" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_2d_normalize_to_center );
+    menu_item_2d_clear = gtk_menu_item_new_with_label( "Clear" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_2d_clear );
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_monaco), menu_monaco );
 
   menu_omnipro = gtk_menu_new();
@@ -1372,7 +1364,8 @@ gint main( gint argc, gchar **argv )
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_normalize_to_max );
     menu_item_1d_normalize_to_center = gtk_menu_item_new_with_label( "Normalize to center" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_normalize_to_center );
-
+    menu_item_1d_clear = gtk_menu_item_new_with_label( "Clear" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_clear );
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_omnipro), menu_omnipro );
  
 
@@ -1391,11 +1384,13 @@ gint main( gint argc, gchar **argv )
   g_signal_connect( menu_item_open_omnipro_imrt_plane, "activate", G_CALLBACK(open_omnipro_imrt_plane_clicked), NULL ); 
   g_signal_connect( menu_item_2d_normalize_to_max, "activate", G_CALLBACK(menu_item_2d_normalize_to_max_clicked), NULL ); 
   g_signal_connect( menu_item_2d_normalize_to_center, "activate", G_CALLBACK(menu_item_2d_normalize_to_center_clicked), NULL ); 
+  g_signal_connect( menu_item_2d_clear, "activate", G_CALLBACK(menu_item_2d_clear_clicked), NULL ); 
 
   g_signal_connect( menu_item_open_omnipro_accept, "activate", G_CALLBACK(open_omnipro_accept_clicked), NULL ); 
   g_signal_connect( menu_item_open_1d_from_csv, "activate", G_CALLBACK(open_1d_from_csv_clicked), NULL ); 
   g_signal_connect( menu_item_1d_normalize_to_max, "activate", G_CALLBACK(menu_item_1d_normalize_to_max_clicked), NULL ); 
   g_signal_connect( menu_item_1d_normalize_to_center, "activate", G_CALLBACK(menu_item_1d_normalize_to_center_clicked), NULL ); 
+  g_signal_connect( menu_item_1d_clear, "activate", G_CALLBACK(menu_item_1d_clear_clicked), NULL ); 
 
 
   g_signal_connect (G_OBJECT (m_2d_da), "draw",            G_CALLBACK (m_2d_da_draw), NULL);
