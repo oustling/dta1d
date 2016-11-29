@@ -127,8 +127,22 @@ GtkWidget *omnipro_button;
 GtkWidget *omnipro_la_2;
 GtkWidget *omnipro_la_3;
 GtkWidget *omnipro_la_4;
-
 GtkWidget *omnipro_da;
+
+GtkWidget *width_frame;
+GtkWidget *width_grid;
+  GtkWidget *width_la_1;
+  GtkWidget *width_ed_1;
+  GtkWidget *width_la_2;
+  GtkWidget *width_la_3;
+  GtkWidget *width_la_4;
+  GtkWidget *width_ed_2;
+  GtkWidget *width_ed_3;
+  GtkWidget *width_bu_1;
+  GtkWidget *width_la_5;
+  GtkWidget *width_ed_4;
+  GtkWidget *width_ed_5;
+
 
 GtkWidget *compare_vbox; //compare_hbox + compare_da
 GtkWidget *compare_hbox; //compare_button + compare_rb_1 + compare_rb_2
@@ -174,7 +188,7 @@ void get_monaco_row_clicked(  );
 void get_monaco_column_clicked(  );
 void open_omnipro_imrt_plane_clicked(  );
 
-void draw_background( cairo_t *_cr, guint _width, guint _height, guint _x, guint _y );
+void draw_background( graph*_g, cairo_t *_cr, guint _width, guint _height, guint _x, guint _y );
 void draw_graph( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y );
 void draw_dots ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y );
 void draw_fwhm_txt ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y, char*_txt );
@@ -223,12 +237,13 @@ void get_omnipro_dataset_clicked(  );
 void compare_button_clicked(  );
 void menu_item_2d_clear_clicked();
 void menu_item_1d_clear_clicked();
+void calculate_width_clicked();
 
 void monaco_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data );
 void omnipro_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data );
 void compare_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data );
 
-gboolean compare_da_press (GtkWidget *_widget, GdkEvent  *_event, gpointer   user_data);
+gboolean compare_da_press( GtkWidget *_widget, GdkEvent *_event, gpointer user_data );
 
 void main_quit(  );
 

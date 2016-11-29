@@ -55,7 +55,9 @@ void open_omnipro_accept_clicked(  )
     gtk_widget_show( omnipro_la_2 );
     gtk_widget_show( omnipro_la_3 );
     gtk_widget_show( omnipro_la_4 );
+    reset_graph_calculations( &omnipro_graph );
     g_array_set_size( omnipro_graph.g, 0 );
+    are_calculations_current = FALSE;
 
     g_array_set_size ( omnipro_sets_garray, 0 ); //now we need to identify sets
     gtk_widget_queue_draw ( omnipro_da );
@@ -152,6 +154,7 @@ void open_1d_from_csv_clicked(  )
    
     _splitted_file = g_strsplit ( _contents, "\n", G_MAXINT );
     _n_of_rows = g_strv_length( _splitted_file );
+    reset_graph_calculations( &omnipro_graph );
     g_array_set_size( omnipro_graph.g, 0 );
     omnipro_graph.type = GT_CROSSLINE;
     for( _i=0;_i<_n_of_rows-1;_i++ )
@@ -178,7 +181,8 @@ void open_1d_from_csv_clicked(  )
     }
     normalize_graph( omnipro_graph, NORM_TO_CENTER );
     calculate_fwhm( &omnipro_graph );
-//   gtk_widget_queue_draw ( omnipro_da );
+    are_calculations_current = FALSE;
+    gtk_widget_queue_draw ( omnipro_da );
     gtk_widget_hide( omnipro_la_1 );
     gtk_widget_hide( omnipro_combo_box_text );
     gtk_widget_hide( omnipro_button );
@@ -253,7 +257,7 @@ void get_omnipro_dataset_clicked()
     gtk_label_set_text( GTK_LABEL(omnipro_la_2), _temp_text->str );
     g_string_printf ( _temp_text, "N of points in set: %d", omnipro_graph.g->len );
     gtk_label_set_text( GTK_LABEL(omnipro_la_3), _temp_text->str );
-    g_string_printf ( _temp_text, "Step: %.3f", get_step_of_garray(omnipro_graph.g) );
+    g_string_printf ( _temp_text, "Step: %.2f", get_step_of_garray(omnipro_graph.g) );
     gtk_label_set_text( GTK_LABEL(omnipro_la_4), _temp_text->str );
   }
 
@@ -273,6 +277,8 @@ void get_omnipro_dataset_clicked()
 
   calculate_fwhm( &omnipro_graph );
   gtk_widget_queue_draw ( omnipro_da );
+  gtk_widget_queue_draw ( compare_da );
+  are_calculations_current = FALSE;
 }
 //end of get_omnipro_dataset_clicked
 

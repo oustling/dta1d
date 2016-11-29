@@ -114,8 +114,11 @@ void open_monaco_plane_clicked(  )
     g_string_printf ( _temp_text, "%" G_GUINT64_FORMAT, monaco_column_val, NULL);
     gtk_entry_set_text( GTK_ENTRY(monaco_ed_2), _temp_text->str );
 
+    reset_graph_calculations( &monaco_graph );
     g_array_set_size( monaco_graph.g, 0 );
+    are_calculations_current = FALSE;
     gtk_widget_queue_draw ( monaco_da );
+    gtk_widget_queue_draw ( compare_da );
 
     g_string_free( _temp_text, TRUE );
     g_free( _filename );
@@ -250,7 +253,7 @@ void get_monaco_row_clicked(  ) // get row given as y
   else if( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(monaco_rb_2)) )monaco_graph.type = GT_DEPTH;
   else if( gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(monaco_rb_3)) )monaco_graph.type = GT_DEPTH;
 
-  normalize_graph( monaco_graph, NORM_TO_CENTER );
+  normalize_graph( monaco_graph, NORM_TO_CENTER ); //????
 
   g_strfreev( _line_needed_splitted );
 
@@ -262,8 +265,10 @@ void get_monaco_row_clicked(  ) // get row given as y
   gtk_label_set_text( GTK_LABEL(monaco_la_5), _temp_text->str );
 
   g_string_free( _temp_text, TRUE );
-
+  reset_graph_calculations( &monaco_graph );
+  are_calculations_current = FALSE;
   gtk_widget_queue_draw ( monaco_da );
+  gtk_widget_queue_draw ( compare_da );
 
 }
 // end of get_monaco_row_clicked
@@ -340,6 +345,10 @@ void get_monaco_column_clicked()
   {
     normalize_graph( monaco_graph, NORM_TO_MAX );
   }
+  reset_graph_calculations( &monaco_graph );
+  are_calculations_current = FALSE;
+  gtk_widget_queue_draw ( monaco_da );
+  gtk_widget_queue_draw ( compare_da );
 
   g_string_printf ( _temp_text, "Currently loaded: %" G_GUINT64_FORMAT ". column", monaco_column_val );
   gtk_label_set_text( GTK_LABEL(monaco_la_3), _temp_text->str );
@@ -349,7 +358,6 @@ void get_monaco_column_clicked()
   gtk_label_set_text( GTK_LABEL(monaco_la_5), _temp_text->str );
   g_string_free( _temp_text, TRUE );
 
-  gtk_widget_queue_draw ( monaco_da );
 }
 // end of get_monaco_column_clicked
 
@@ -365,7 +373,7 @@ void open_omnipro_imrt_plane_clicked(  )
   GString *_temp_text = NULL;
 
   GFile *_opening_file = NULL;
-  GFileInputStream *_file_input = NULL;
+//  GFileInputStream *_file_input = NULL;
 
   gchar **_temp_line_splitted = NULL;
   guint _i,_j;
@@ -465,7 +473,10 @@ void open_omnipro_imrt_plane_clicked(  )
     
 
     g_array_set_size( monaco_graph.g, 0 );
+    reset_graph_calculations( &monaco_graph );
+    are_calculations_current = FALSE;
     gtk_widget_queue_draw ( monaco_da );
+    gtk_widget_queue_draw ( compare_da );
 
     g_string_free( _temp_text, TRUE );
     g_free( _filename );

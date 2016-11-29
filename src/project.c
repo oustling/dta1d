@@ -55,7 +55,7 @@ void calculate_fwhm( graph*_g )
   _g->second_50 = _b; 
 }
 
-
+/*
 //-------------------------------------------------------------------//
 // the garray is trimmed from both sides from min to max 'x' values
 //-------------------------------------------------------------------//
@@ -70,7 +70,7 @@ void trim_garray( GArray* _g, gdouble _min, gdouble _max)
                  g_array_remove_index( _g, _i );
   }
 }
-
+*/
 //-------------------------------------------------------------------//
 // Function draws dots on given cairo_t according to values in graph 
 //-------------------------------------------------------------------//
@@ -94,7 +94,10 @@ void draw_dots( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y )
     else if( g_array_index( _g->g, point, _i ).result == 1 ) gdk_cairo_set_source_rgba (_cr, &_c2);//bad
     if( g_array_index( _g->g, point, _i ).result != -1 )
     {
-      cairo_arc( _cr, 0.5*_w + g_array_index( _g->g, point, _i ).x * _w*0.8*0.5 / (15.0) + _x,
+      if( _g->type == GT_CROSSLINE || _g->type == GT_INLINE )
+           cairo_arc( _cr, 0.5*_w + g_array_index( _g->g, point, _i ).x * _w*0.8*0.5 / (15.0) + _x,
+                      _h*0.9 - g_array_index( _g->g, point, _i ).dose*0.01 * 0.8 * _h + _y, 1., 0., 2 * G_PI);
+      else cairo_arc( _cr, 0.1*_w + g_array_index( _g->g, point, _i ).x * _w*0.8*0.5 / (15.0) + _x,
                       _h*0.9 - g_array_index( _g->g, point, _i ).dose*0.01 * 0.8 * _h + _y, 1., 0., 2 * G_PI);
       cairo_stroke ( _cr );
 
@@ -116,12 +119,18 @@ void draw_graph( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y 
 
   // move to first point              // 15 should be on 0.8*_width*0.5
   cairo_set_line_width( _cr, 1 );
-  cairo_move_to ( _cr, 0.5*_w + g_array_index( _g->g, point, 0 ).x * _w *0.8*0.5 / (15.0) + _x,
+  if( _g->type == GT_CROSSLINE || _g->type == GT_INLINE )
+       cairo_move_to ( _cr, 0.5*_w + g_array_index( _g->g, point, 0 ).x * _w *0.8*0.5 / (15.0) + _x,
+                           _h*0.9 - g_array_index( _g->g, point, 0 ).dose *0.01 * 0.8 * _h + _y );
+  else cairo_move_to ( _cr, 0.1*_w + g_array_index( _g->g, point, 0 ).x * _w *0.8*0.5 / (15.0) + _x,
                            _h*0.9 - g_array_index( _g->g, point, 0 ).dose *0.01 * 0.8 * _h + _y );
 
   for(_i=1; _i<_g->g->len; _i++ )
   {
-    cairo_line_to( _cr, 0.5*_w + g_array_index( _g->g, point, _i ).x * _w*0.8*0.5 / (15.0) + _x,
+    if( _g->type == GT_CROSSLINE || _g->type == GT_INLINE )
+         cairo_line_to( _cr, 0.5*_w + g_array_index( _g->g, point, _i ).x * _w*0.8*0.5 / (15.0) + _x,
+                            _h*0.9 - g_array_index( _g->g, point, _i ).dose *0.01 * 0.8 * _h + _y );
+    else cairo_line_to( _cr, 0.1*_w + g_array_index( _g->g, point, _i ).x * _w*0.8*0.5 / (15.0) + _x,
                             _h*0.9 - g_array_index( _g->g, point, _i ).dose *0.01 * 0.8 * _h + _y );
   }
 
@@ -137,6 +146,8 @@ void draw_graph( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y 
 //-------------------------------------------------------------------//
 void draw_fwhm_txt ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y, char*_txt )
 {
+  if( _g == NULL )return;
+  if( _g->type != GT_CROSSLINE && _g->type != GT_INLINE )return;
   GString *_temp_text = NULL;
   _temp_text = g_string_new ("");
   calculate_fwhm( _g );
@@ -157,6 +168,8 @@ void draw_fwhm_txt ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint
 //-------------------------------------------------------------------//
 void draw_fwhm_line ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y )
 {
+  if( _g == NULL )return;
+  if( _g->type != GT_CROSSLINE && _g->type != GT_INLINE )return;
   calculate_fwhm( _g );
   GdkRGBA _c2;
   gdk_rgba_parse( &_c2, "red" );
@@ -175,12 +188,11 @@ void draw_fwhm_line ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guin
 //-------------------------------------------------------------------//
 // Function draws on given cairo_t some basics needed to draw graph on
 //-------------------------------------------------------------------//
-void draw_background( cairo_t *_cr, guint _width, guint _height, guint _x, guint _y )
+void draw_background( graph*_g, cairo_t *_cr, guint _width, guint _height, guint _x, guint _y )
 {
   GdkRGBA _color;
   gdouble _var;
   guint _i;
-
   GString *_temp_text = NULL;
   _temp_text = g_string_new ("");
 
@@ -205,10 +217,19 @@ void draw_background( cairo_t *_cr, guint _width, guint _height, guint _x, guint
   gdk_cairo_set_source_rgba (_cr, &_color);
   cairo_set_line_width( _cr, 0.5 );
   cairo_stroke ( _cr );
+  if( _g == NULL ) return;
 
   //axis
-  cairo_move_to ( _cr, _width / 2 + _x, _height *0.9 + _y ); // y
-  cairo_line_to ( _cr, _width / 2 + _x, _height *0.1 + _y );
+  if( _g->type == GT_CROSSLINE || _g->type == GT_INLINE )
+  {
+    cairo_move_to ( _cr, _width * 0.5 + _x, _height *0.9 + _y ); // y
+    cairo_line_to ( _cr, _width * 0.5 + _x, _height *0.1 + _y );
+  }
+  else
+  {
+    cairo_move_to ( _cr, _width * 0.1 + _x, _height *0.9 + _y ); // y
+    cairo_line_to ( _cr, _width * 0.1 + _x, _height *0.1 + _y );
+  }
 
   cairo_move_to ( _cr, _width *0.1 + _x, _height *0.9 + _y ); // x
   cairo_line_to ( _cr, _width *0.9 + _x, _height *0.9 + _y);
@@ -222,7 +243,8 @@ void draw_background( cairo_t *_cr, guint _width, guint _height, guint _x, guint
   //labels
   for( _i =0; _i<=6; _i++)
   {
-    _var = (30*_i)/6.0-15;
+    if( _g->type == GT_CROSSLINE || _g->type == GT_INLINE ) _var = (30*_i)/6.0-15;
+    else _var = (30*_i)/6.0;
     g_string_printf( _temp_text, "%d", (gint)_var, NULL );
     cairo_move_to ( _cr, _width*0.1 + (0.8*_width*_i)/6 + _x, _height *0.95 + _y ); 
     cairo_show_text ( _cr,_temp_text->str );
@@ -278,11 +300,10 @@ static void draw_page (GtkPrintOperation *operation,
   cairo_set_line_width (_cr, 1);
   cairo_stroke (_cr);
 
-//  draw_garray( width, height * 0.5, 0, 20, cr );
-  graph*_tested_g;
-  graph*_other_g;
+  graph*_tested_g=NULL;
+  graph*_other_g=NULL;
 
-  draw_background( _cr, _w, _h*0.5, 0, 20 );
+  draw_background( NULL , _cr, _w, _h*0.5, 0, 20 );
   if( are_calculations_current )
   {
 
@@ -338,7 +359,7 @@ static void draw_page (GtkPrintOperation *operation,
   cairo_move_to (_cr, 30, _h *0.5 + 40);
   pango_cairo_show_layout (_cr, layout);
 
-  page_str = g_strdup_printf ("Number of checked points: %d", _tested_g->g->len );
+  page_str = g_strdup_printf ("Number of checked points: %d", get_number_of_checked_points_in_graph( _tested_g ) );
   desc = pango_font_description_from_string ("sans 12");
   pango_layout_set_font_description (layout, desc);
   pango_font_description_free (desc);
@@ -1020,7 +1041,7 @@ void monaco_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
 {
   gint _w  = gtk_widget_get_allocated_width (_widget);
   gint _h = gtk_widget_get_allocated_height (_widget);
-  draw_background( _cr, _w, _h, 0, 0 );
+  draw_background( &monaco_graph, _cr, _w, _h, 0, 0 );
   draw_graph( &monaco_graph, _cr, _w, _h, 0, 0 );
   draw_fwhm_txt( &monaco_graph, _cr, _w, _h, 0, 0, "2D FWHM" );
   draw_fwhm_line( &monaco_graph, _cr, _w, _h, 0, 0 );
@@ -1031,7 +1052,7 @@ void omnipro_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
 {
   gint _w  = gtk_widget_get_allocated_width (_widget);
   gint _h = gtk_widget_get_allocated_height (_widget);
-  draw_background( _cr, _w, _h, 0, 0 );
+  draw_background( &omnipro_graph, _cr, _w, _h, 0, 0 );
   draw_graph( &omnipro_graph, _cr, _w, _h, 0, 0 );
   draw_fwhm_txt( &omnipro_graph, _cr, _w, _h, 0, 0, "1D FWHM" );
   draw_fwhm_line( &omnipro_graph, _cr, _w, _h, 0, 0 );
@@ -1042,11 +1063,11 @@ void compare_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
 {
   gint _w  = gtk_widget_get_allocated_width (_widget);
   gint _h = gtk_widget_get_allocated_height (_widget);
-  draw_background( _cr, _w, _h, 0, 0 ); 
+  draw_background( &monaco_graph, _cr, _w, _h, 0, 0 ); 
   if( are_calculations_current )
   {
-    graph*_tested_g;
-    graph*_other_g;
+    graph*_tested_g=NULL;
+    graph*_other_g=NULL;
 
     if( gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(compare_rb_1)) )
     {
@@ -1058,6 +1079,7 @@ void compare_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data )
       _tested_g = &omnipro_graph;
       _other_g  = &monaco_graph;
     }
+    draw_background( _tested_g, _cr, _w, _h, 0, 0 ); 
 
     draw_graph( &omnipro_graph, _cr, _w, _h, 0, 0 );
     draw_graph( &monaco_graph, _cr, _w, _h, 0, 0 );
@@ -1093,8 +1115,8 @@ void compare_button_clicked()
   gdouble _max_tested_x = max_common_x( &monaco_graph, &omnipro_graph );
   gdouble _temp_dta;
 
-  graph*_tested_g;
-  graph*_other_g;
+  graph*_tested_g=NULL;
+  graph*_other_g=NULL;
 
   if( gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(compare_rb_1)) )
   {
@@ -1118,6 +1140,11 @@ void compare_button_clicked()
   gtk_widget_queue_draw ( compare_da );
 }
 
+void calculate_width_clicked()
+{
+
+}
+
 gboolean compare_doses( gdouble _d1, gdouble _d2, gdouble _sensitivity )
 {
   if( abs1( _d1 - _d2 ) < _sensitivity ) return TRUE;
@@ -1127,8 +1154,8 @@ gboolean compare_doses( gdouble _d1, gdouble _d2, gdouble _sensitivity )
 
 gboolean compare_da_press (GtkWidget *_widget, GdkEvent  *_event, gpointer   user_data)
 {
-  graph*_tested_g;
-  graph*_other_g;
+  graph*_tested_g=NULL;
+  graph*_other_g=NULL;
 
   // do we want to check 1vs2 or 2vs1 ?
   if( gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(compare_rb_1)) )
@@ -1284,6 +1311,68 @@ gint main( gint argc, gchar **argv )
   gtk_container_add( GTK_CONTAINER(monaco_frame), monaco_vbox_menu );
   gtk_box_pack_start( GTK_BOX(hhbox), monaco_frame, FALSE, FALSE, 2 );
 
+
+  width_frame = gtk_frame_new("Width of profiles");
+  gtk_container_set_border_width( GTK_CONTAINER(width_frame), 2 );
+    width_grid = gtk_grid_new();
+    gtk_grid_set_row_spacing( GTK_GRID(width_grid), 1 );
+    gtk_grid_set_column_spacing( GTK_GRID(width_grid), 1 );
+    gtk_grid_set_column_homogeneous( GTK_GRID(width_grid), TRUE );
+      gtk_grid_insert_row( GTK_GRID(width_grid),1 );
+      gtk_grid_insert_row( GTK_GRID(width_grid),2 );
+      gtk_grid_insert_column( GTK_GRID(width_grid),1 );
+      gtk_grid_insert_column( GTK_GRID(width_grid),2 );
+      gtk_grid_insert_column( GTK_GRID(width_grid),3 );
+        width_la_1 = gtk_label_new ("Height [%]:"); // first row
+        width_ed_1 = gtk_entry_new ();
+        gtk_entry_set_max_length (GTK_ENTRY(width_ed_1), 3);
+        gtk_entry_set_max_width_chars (GTK_ENTRY(width_ed_1), 3);
+        gtk_entry_set_width_chars (GTK_ENTRY(width_ed_1), 3);
+        width_la_2 = gtk_label_new ("L(-) [cm]:");
+        width_la_3 = gtk_label_new ("R(+) [cm]:");
+      gtk_grid_attach (GTK_GRID(width_grid), width_la_1, 0,0, 1,1 );
+      gtk_grid_attach (GTK_GRID(width_grid), width_ed_1, 1,0, 1,1 );
+      gtk_grid_attach (GTK_GRID(width_grid), width_la_2, 2,0, 1,1 );
+      gtk_grid_attach (GTK_GRID(width_grid), width_la_3, 3,0, 1,1 );
+
+        width_la_4 = gtk_label_new ("1D:");
+        width_ed_2 = gtk_entry_new (); // second row
+        gtk_entry_set_max_length (GTK_ENTRY(width_ed_2), 4);
+        gtk_entry_set_max_width_chars (GTK_ENTRY(width_ed_2), 4);
+        gtk_entry_set_width_chars (GTK_ENTRY(width_ed_2), 4);
+        gtk_widget_set_can_focus( width_ed_2, FALSE );
+
+        width_ed_3 = gtk_entry_new ();
+        gtk_entry_set_max_length (GTK_ENTRY(width_ed_3), 4);
+        gtk_entry_set_max_width_chars (GTK_ENTRY(width_ed_3), 4);
+        gtk_entry_set_width_chars (GTK_ENTRY(width_ed_3), 4);
+        gtk_widget_set_can_focus( width_ed_3, FALSE );
+      gtk_grid_attach (GTK_GRID(width_grid), width_la_4, 1,1, 1,1 );
+      gtk_grid_attach (GTK_GRID(width_grid), width_ed_2, 2,1, 1,1 );
+      gtk_grid_attach (GTK_GRID(width_grid), width_ed_3, 3,1, 1,1 );
+
+        width_bu_1 = gtk_button_new_with_label("Calc"); // third row
+        g_signal_connect( width_bu_1, "clicked", G_CALLBACK( calculate_width_clicked ), NULL ); 
+
+        width_la_5 = gtk_label_new ("2D:");
+        width_ed_4 = gtk_entry_new ();
+        gtk_entry_set_max_length (GTK_ENTRY(width_ed_4), 4);
+        gtk_entry_set_max_width_chars (GTK_ENTRY(width_ed_4), 4);
+        gtk_entry_set_width_chars (GTK_ENTRY(width_ed_4), 4);
+        gtk_widget_set_can_focus( width_ed_4, FALSE );
+
+        width_ed_5 = gtk_entry_new ();
+        gtk_entry_set_max_length (GTK_ENTRY(width_ed_5), 4);
+        gtk_entry_set_max_width_chars (GTK_ENTRY(width_ed_5), 4);
+        gtk_entry_set_width_chars (GTK_ENTRY(width_ed_5), 4);
+        gtk_widget_set_can_focus( width_ed_5, FALSE );
+      gtk_grid_attach (GTK_GRID(width_grid), width_bu_1, 0,2, 1,1 );
+      gtk_grid_attach (GTK_GRID(width_grid), width_la_5, 1,2, 1,1 );
+      gtk_grid_attach (GTK_GRID(width_grid), width_ed_4, 2,2, 1,1 );
+      gtk_grid_attach (GTK_GRID(width_grid), width_ed_5, 3,2, 1,1 );
+
+    gtk_container_add( GTK_CONTAINER(width_frame), width_grid );
+  gtk_box_pack_start( GTK_BOX(hhbox), width_frame, FALSE, FALSE, 2 );
 
 
   compare_hbox = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );

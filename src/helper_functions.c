@@ -72,7 +72,7 @@ void reset_graph_calculations( graph*_g )
   }
   _g->first_50 = 0;
   _g->second_50 = 0;
-  _g->type = GT_UNDEFINED;
+// it cannot change graph.type
 }
 
 //-------------------------------------------------------------------//
