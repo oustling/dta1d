@@ -160,9 +160,9 @@ void save_monaco_graph_clicked(  )
   _temp_text = g_string_new ("");
 
   for( _i=0; _i < monaco_graph.g->len; _i++ )
-  {
-    g_string_append_printf( _temp_text, "%" G_GUINT64_FORMAT ", %5.5f\n", _i+1, (g_array_index(monaco_graph.g,point,_i)).dose, NULL);
-  }
+    g_string_append_printf( _temp_text, "%f, %f\n",
+                            (g_array_index(monaco_graph.g,point,_i)).x,
+                            (g_array_index(monaco_graph.g,point,_i)).dose, NULL);
 
 
   _dialog = gtk_file_chooser_dialog_new ("Choose file to open",
@@ -176,7 +176,7 @@ void save_monaco_graph_clicked(  )
   _chooser = GTK_FILE_CHOOSER (_dialog);
 
   gtk_file_chooser_set_do_overwrite_confirmation (_chooser, TRUE);
-  gtk_file_chooser_set_current_name (_chooser, "Exported Row.csv");
+  gtk_file_chooser_set_current_name (_chooser, "Exported graph.csv");
   _uri = g_string_new( g_get_current_dir() );
   g_string_append_printf( _uri, "/data" );
   gtk_file_chooser_set_current_folder( GTK_FILE_CHOOSER(_dialog), _uri->str );

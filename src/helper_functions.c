@@ -1,4 +1,70 @@
 //-------------------------------------------------------------------//
+// we assume that _g is dose profile graph = there are two points that
+// have dose _height dose, these points are saved to _g->first_50 and
+// second_50, 
+//-------------------------------------------------------------------//
+gboolean calculate_width( graph*_g, gdouble _height )
+{
+  if( _g == 0 )return FALSE;
+  if( _g->g == 0 )return FALSE;
+  if( _g->g->len == 0 )return FALSE;
+  if( _g->type == GT_DEPTH )return FALSE;
+  point _p1,_p2;//1, _p2, _p3, _p4;
+  point _p;
+  guint _i = 1; // we start checking from second point
+ // guint _counter = 0;
+
+  GArray*_tg;
+  _tg = g_array_new (TRUE, TRUE, sizeof (point));
+
+  for( ;; )
+  {
+    if( g_array_index( _g->g, point, _i ).dose >= _height && g_array_index( _g->g, point, _i-1 ).dose < _height )
+    {
+      _p2.x    = g_array_index( _g->g, point, _i ).x;
+      _p2.dose = g_array_index( _g->g, point, _i ).dose;
+      _p1.x    = g_array_index( _g->g, point, _i-1 ).x;
+      _p1.dose = g_array_index( _g->g, point, _i-1 ).dose;
+      _p.x = ( _height - _p1.dose )*( _p2.x - _p1.x )/( _p2.dose - _p1.dose ) + _p1.x;
+      _p.dose = _height;
+      g_array_append_val( _tg, _p );
+
+    }
+    else if( g_array_index( _g->g, point, _i ).dose < _height && g_array_index( _g->g, point, _i-1 ).dose >= _height )
+    {
+        _p2.x    = g_array_index( _g->g, point, _i ).x;
+        _p2.dose = g_array_index( _g->g, point, _i ).dose;
+        _p1.x    = g_array_index( _g->g, point, _i-1 ).x;
+        _p1.dose = g_array_index( _g->g, point, _i-1 ).dose;
+        
+        _p.x = ( _p2.dose - _height )*( _p2.x - _p1.x )/( _p1.dose - _p2.dose ) + _p2.x;
+        _p.dose = _height;
+      g_array_append_val( _tg, _p );
+    }
+    if( _g->g->len == _i )break; //end of _g->g
+    _i++;
+  }
+  //    printf("%d ", _tg->len);
+  if( _tg->len != 2 )
+  {
+    _g->first_50  = 0;
+    _g->second_50 = 0; 
+    g_array_free ( _tg, TRUE );
+    return FALSE;
+  }
+//    printf("x %f, dose %f\n", g_array_index( _tg, point, 0 ).x,g_array_index( _tg, point, 0 ).dose);
+//    printf("x %f, dose %f\n", g_array_index( _tg, point, 1 ).x,g_array_index( _tg, point, 1 ).dose);
+  _g->first_50  =  g_array_index( _tg, point, 0 ).x;
+  _g->second_50 = g_array_index( _tg, point, 1 ).x; 
+  g_array_free ( _tg, TRUE );
+  return TRUE;
+}
+
+
+
+
+
+//-------------------------------------------------------------------//
 // Helper functions that operates on graphs
 //-------------------------------------------------------------------//
 

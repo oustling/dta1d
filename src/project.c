@@ -4,56 +4,6 @@
 #include "1D_functions.c"
 #include "helper_functions.c"
 
-//-------------------------------------------------------------------//
-// we assume that _g is dose profile graph = there are two points that
-// have dose = 50% 
-//-------------------------------------------------------------------//
-void calculate_fwhm( graph*_g )
-{
-  if( _g == 0 )return;
-  if( _g->g == 0 )return;
-  if( _g->g->len == 0 )return;
-  if( _g->type == GT_DEPTH )return;
-  point _p1, _p2, _p3, _p4;
-  guint _i;
-  guint _counter = 0;
-
-  for( _i=0; _i<_g->g->len; _i++)
-  {
-    if( _counter == 0 )
-    {
-      if(  g_array_index( _g->g, point, _i ).dose >= 50.0 )
-      {
-        _p1.x    = g_array_index( _g->g, point, _i ).x;
-        _p1.dose = g_array_index( _g->g, point, _i ).dose;
-        _p2.x    = g_array_index( _g->g, point, _i-1 ).x;
-        _p2.dose = g_array_index( _g->g, point, _i-1 ).dose;
-        _i++;
-        _counter = 1;
-      }
-      else _i++;
-    }
-    else // _counter == 1 
-    {
-      if(  g_array_index( _g->g, point, _i ).dose <= 50.0 )
-      {
-        _p3.x    = g_array_index( _g->g, point, _i ).x;
-        _p3.dose = g_array_index( _g->g, point, _i ).dose;
-        _p4.x    = g_array_index( _g->g, point, _i-1 ).x;
-        _p4.dose = g_array_index( _g->g, point, _i-1 ).dose;
-        _i++;
-        _counter = 1;
-        break;
-      }
-      else _i++;
-    }
-  }
-  // now we have four points
-  gdouble _a = ((50-_p1.dose)*(_p2.x-_p1.x))/(_p2.dose-_p1.dose)+_p1.x;
-  gdouble _b = _p4.x - ((_p4.dose-50)*(_p4.x-_p3.x))/(_p4.dose-_p3.dose);
-  _g->first_50  = _a;
-  _g->second_50 = _b; 
-}
 
 /*
 //-------------------------------------------------------------------//
@@ -150,7 +100,7 @@ void draw_fwhm_txt ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint
   if( _g->type != GT_CROSSLINE && _g->type != GT_INLINE )return;
   GString *_temp_text = NULL;
   _temp_text = g_string_new ("");
-  calculate_fwhm( _g );
+  calculate_width( _g, 50 );
   GdkRGBA _c2;
   gdk_rgba_parse( &_c2, "red" );
 
@@ -170,7 +120,7 @@ void draw_fwhm_line ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guin
 {
   if( _g == NULL )return;
   if( _g->type != GT_CROSSLINE && _g->type != GT_INLINE )return;
-  calculate_fwhm( _g );
+  calculate_width( _g, 50 );
   GdkRGBA _c2;
   gdk_rgba_parse( &_c2, "red" );
 
@@ -1142,7 +1092,23 @@ void compare_button_clicked()
 
 void calculate_width_clicked()
 {
+  if( ! is_it_number(gtk_entry_get_text(GTK_ENTRY(width_ed_1))) ){msg("Given height is not a number, decimal signs are not allowed as well"); return;}
 
+  GString*_t = g_string_new("");
+  gdouble _h = g_strtod( gtk_entry_get_text(GTK_ENTRY(width_ed_1)), NULL );
+
+  if( &omnipro_graph )calculate_width( &omnipro_graph, _h );
+  g_string_printf( _t, "%.2f", omnipro_graph.first_50 );
+  gtk_entry_set_text(GTK_ENTRY(width_ed_2), _t->str );
+  g_string_printf( _t, "%.2f", omnipro_graph.second_50 );
+  gtk_entry_set_text(GTK_ENTRY(width_ed_3), _t->str );
+
+  if( &monaco_graph ) calculate_width( &monaco_graph, _h );
+  g_string_printf( _t, "%.2f", monaco_graph.first_50 );
+  gtk_entry_set_text(GTK_ENTRY(width_ed_4), _t->str );
+  g_string_printf( _t, "%.2f", monaco_graph.second_50 );
+  gtk_entry_set_text(GTK_ENTRY(width_ed_5), _t->str );
+  g_string_free( _t, TRUE );
 }
 
 gboolean compare_doses( gdouble _d1, gdouble _d2, gdouble _sensitivity )
@@ -1152,7 +1118,7 @@ gboolean compare_doses( gdouble _d1, gdouble _d2, gdouble _sensitivity )
 }
 
 
-gboolean compare_da_press (GtkWidget *_widget, GdkEvent  *_event, gpointer   user_data)
+gboolean compare_da_press (GtkWidget *_widget, GdkEvent  *_event, gpointer user_data)
 {
   graph*_tested_g=NULL;
   graph*_other_g=NULL;
@@ -1337,13 +1303,13 @@ gint main( gint argc, gchar **argv )
 
         width_la_4 = gtk_label_new ("1D:");
         width_ed_2 = gtk_entry_new (); // second row
-        gtk_entry_set_max_length (GTK_ENTRY(width_ed_2), 4);
+//        gtk_entry_set_max_length (GTK_ENTRY(width_ed_2), 4);
         gtk_entry_set_max_width_chars (GTK_ENTRY(width_ed_2), 4);
         gtk_entry_set_width_chars (GTK_ENTRY(width_ed_2), 4);
         gtk_widget_set_can_focus( width_ed_2, FALSE );
 
         width_ed_3 = gtk_entry_new ();
-        gtk_entry_set_max_length (GTK_ENTRY(width_ed_3), 4);
+//        gtk_entry_set_max_length (GTK_ENTRY(width_ed_3), 4);
         gtk_entry_set_max_width_chars (GTK_ENTRY(width_ed_3), 4);
         gtk_entry_set_width_chars (GTK_ENTRY(width_ed_3), 4);
         gtk_widget_set_can_focus( width_ed_3, FALSE );
@@ -1356,13 +1322,13 @@ gint main( gint argc, gchar **argv )
 
         width_la_5 = gtk_label_new ("2D:");
         width_ed_4 = gtk_entry_new ();
-        gtk_entry_set_max_length (GTK_ENTRY(width_ed_4), 4);
+//        gtk_entry_set_max_length (GTK_ENTRY(width_ed_4), 4);
         gtk_entry_set_max_width_chars (GTK_ENTRY(width_ed_4), 4);
         gtk_entry_set_width_chars (GTK_ENTRY(width_ed_4), 4);
         gtk_widget_set_can_focus( width_ed_4, FALSE );
 
         width_ed_5 = gtk_entry_new ();
-        gtk_entry_set_max_length (GTK_ENTRY(width_ed_5), 4);
+//        gtk_entry_set_max_length (GTK_ENTRY(width_ed_5), 4);
         gtk_entry_set_max_width_chars (GTK_ENTRY(width_ed_5), 4);
         gtk_entry_set_width_chars (GTK_ENTRY(width_ed_5), 4);
         gtk_widget_set_can_focus( width_ed_5, FALSE );

@@ -172,22 +172,23 @@ graph monaco_graph;
 graph omnipro_graph;
 gboolean are_calculations_current = FALSE; // this indicates if we should draw compare_da
 
-// Arrays with point structures (most of them)
-//GArray *monaco_garray = NULL; 
-//GArray *omnipro_points_garray = NULL; // with points
 GArray *omnipro_sets_garray = NULL; // with omnipro_datasets
-//GArray *checked_garray_trimmed = NULL; // this it the array we want to compare, filled with points
-//GArray *the_other_garray = NULL; // this is the array we want to compare to, filled with points
 
 // FUNCTIONS //
 
-/* 2D manipulating functions defined in monaco_functions.c */
+/* 2D manipulating functions defined in 2D_functions.c */
 void open_monaco_plane_clicked(  );
 void save_monaco_graph_clicked(  );
 void get_monaco_row_clicked(  );
 void get_monaco_column_clicked(  );
 void open_omnipro_imrt_plane_clicked(  );
 
+/* 1D manipulating functions defined in 2D_functions.c */
+void open_omnipro_accept_clicked(  );
+void open_1d_from_csv_clicked(  );
+void get_omnipro_dataset_clicked(  );
+
+/* drawing functions */
 void draw_background( graph*_g, cairo_t *_cr, guint _width, guint _height, guint _x, guint _y );
 void draw_graph( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y );
 void draw_dots ( graph*_g, cairo_t *_cr, guint _w, guint _h, guint _x, guint _y );
@@ -210,19 +211,18 @@ void color2_changed( GtkColorButton *_widget, gpointer   user_data );
 
 gboolean compare_doses( gdouble _d1, gdouble _d2, gdouble _sensitivity );
 gdouble abs1( gdouble );
-void trim_garray( GArray* _g, gdouble _min, gdouble _max);
+//void trim_garray( GArray* _g, gdouble _min, gdouble _max);
 gint get_number_of_good_points_in_graph( graph*_g );
 gint get_number_of_checked_points_in_graph( graph*_g );
 void reset_graph_calculations( graph*_g );
 void invert_graph( graph*_g );
 point* find_point_in_garray( GArray* _g, gdouble _x, gdouble _s );//we give x value and function
-                                                          // returns dose for given x from _g, _s is sensitivity
-gdouble check_dta( GArray* , point* ); //we check the point 
-                                                   //from _checked_garray_trimmed against _second garray points,
+                                                          // returns point of given x from _g, _s is sensitivity
+gdouble check_dta( GArray*_g , point*_p ); //we check the point _p against garray _g,
                                                    //according to defined agreements
 gdouble min_common_x( graph*_g1, graph*_g2 );
 gdouble max_common_x( graph*_g1, graph*_g2 );
-void calculate_fwhm( graph*_g );
+gboolean calculate_width( graph*_g, gdouble _height );
 gdouble get_step_of_garray( GArray* );
 void normalize_graph(  graph, guint _norm_type );
 gdouble max_x_from_garray( GArray* );
@@ -231,9 +231,6 @@ gdouble min_x_from_garray( GArray* );
 static void msg( const gchar * );
 gboolean is_it_number( const gchar * );
 
-void open_omnipro_accept_clicked(  );
-void open_1d_from_csv_clicked(  );
-void get_omnipro_dataset_clicked(  );
 void compare_button_clicked(  );
 void menu_item_2d_clear_clicked();
 void menu_item_1d_clear_clicked();
