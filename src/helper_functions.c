@@ -47,7 +47,7 @@ gboolean calculate_width( graph*_g, gdouble _height )
   //    printf("%d ", _tg->len);
   if( _tg->len != 2 )
   {
-    _g->first_50  = 0;
+   _g->first_50  = 0;
     _g->second_50 = 0; 
     g_array_free ( _tg, TRUE );
     return FALSE;
@@ -60,6 +60,60 @@ gboolean calculate_width( graph*_g, gdouble _height )
   return TRUE;
 }
 
+//-------------------------------------------------------------------//
+// function acts as abowe but it prints all points of given height, 
+//-------------------------------------------------------------------//
+gboolean print_x_of_given_width( graph*_g, gdouble _height )
+{
+  if( _g == 0 )return FALSE;
+  if( _g->g == 0 )return FALSE;
+  if( _g->g->len == 0 )return FALSE;
+  if( _g->type == GT_DEPTH )return FALSE;
+  point _p1,_p2;//1, _p2, _p3, _p4;
+  point _p;
+  guint _i = 1; // we start checking from second point
+ // guint _counter = 0;
+
+  GArray*_tg;
+  _tg = g_array_new (TRUE, TRUE, sizeof (point));
+
+  for( ;; )
+  {
+    if( g_array_index( _g->g, point, _i ).dose >= _height && g_array_index( _g->g, point, _i-1 ).dose < _height )
+    {
+      _p2.x    = g_array_index( _g->g, point, _i ).x;
+      _p2.dose = g_array_index( _g->g, point, _i ).dose;
+      _p1.x    = g_array_index( _g->g, point, _i-1 ).x;
+      _p1.dose = g_array_index( _g->g, point, _i-1 ).dose;
+      _p.x = ( _height - _p1.dose )*( _p2.x - _p1.x )/( _p2.dose - _p1.dose ) + _p1.x;
+      _p.dose = _height;
+      g_array_append_val( _tg, _p );
+
+    }
+    else if( g_array_index( _g->g, point, _i ).dose < _height && g_array_index( _g->g, point, _i-1 ).dose >= _height )
+    {
+        _p2.x    = g_array_index( _g->g, point, _i ).x;
+        _p2.dose = g_array_index( _g->g, point, _i ).dose;
+        _p1.x    = g_array_index( _g->g, point, _i-1 ).x;
+        _p1.dose = g_array_index( _g->g, point, _i-1 ).dose;
+        
+        _p.x = ( _p2.dose - _height )*( _p2.x - _p1.x )/( _p1.dose - _p2.dose ) + _p2.x;
+        _p.dose = _height;
+      g_array_append_val( _tg, _p );
+    }
+    if( _g->g->len == _i )break; //end of _g->g
+    _i++;
+  }
+
+  GString*_temp_s;
+  _temp_s = g_string_new("");
+  g_string_append_printf( _temp_s, "There are not exactly two points with dose %2.2f.\n The number of points is: %d\n", _height, _tg->len, NULL );  
+  for( _i=0; _i<_tg->len; _i++ )g_string_append_printf( _temp_s, "%2.2f ",  g_array_index( _tg, point, _i ).x, NULL );
+  msg(_temp_s->str);
+  g_string_free( _temp_s, TRUE );
+  g_array_free ( _tg, TRUE );
+  return FALSE;
+}
 
 
 

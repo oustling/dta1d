@@ -81,6 +81,7 @@ GtkWidget *menu_item_save_monaco_graph;
 GtkWidget *menu_item_open_omnipro_imrt_plane;
 GtkWidget *menu_item_2d_normalize_to_max;
 GtkWidget *menu_item_2d_normalize_to_center;
+GtkWidget *menu_item_2d_print_x;
 GtkWidget *menu_item_2d_clear;
 
 GtkWidget *menu_omnipro;
@@ -88,6 +89,7 @@ GtkWidget *menu_item_open_omnipro_accept;
 GtkWidget *menu_item_open_1d_from_csv;
 GtkWidget *menu_item_1d_normalize_to_max;
 GtkWidget *menu_item_1d_normalize_to_center;
+GtkWidget *menu_item_1d_print_x;
 GtkWidget *menu_item_1d_clear;
 //end of menu
 
@@ -223,6 +225,7 @@ gdouble check_dta( GArray*_g , point*_p ); //we check the point _p against garra
 gdouble min_common_x( graph*_g1, graph*_g2 );
 gdouble max_common_x( graph*_g1, graph*_g2 );
 gboolean calculate_width( graph*_g, gdouble _height );
+gboolean print_x_of_given_width( graph*_g, gdouble _height );
 gdouble get_step_of_garray( GArray* );
 void normalize_graph(  graph, guint _norm_type );
 gdouble max_x_from_garray( GArray* );
@@ -231,10 +234,13 @@ gdouble min_x_from_garray( GArray* );
 static void msg( const gchar * );
 gboolean is_it_number( const gchar * );
 
+// signal functions - from menu or buttons //
 void compare_button_clicked(  );
 void menu_item_2d_clear_clicked();
 void menu_item_1d_clear_clicked();
 void calculate_width_clicked();
+void menu_item_1d_print_x_clicked();
+void menu_item_2d_print_x_clicked();
 
 void monaco_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data );
 void omnipro_da_draw( GtkWidget *_widget, cairo_t *_cr, gpointer _data );

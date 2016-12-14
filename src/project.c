@@ -1111,6 +1111,26 @@ void calculate_width_clicked()
   g_string_free( _t, TRUE );
 }
 
+void menu_item_1d_print_x_clicked()
+{
+  if( ! is_it_number(gtk_entry_get_text(GTK_ENTRY(width_ed_1))) ){msg("Given height is not a number, decimal signs are not allowed as well"); return;}
+
+  GString*_t = g_string_new("");
+  gdouble _h = g_strtod( gtk_entry_get_text(GTK_ENTRY(width_ed_1)), NULL );
+  if( &omnipro_graph )print_x_of_given_width( &omnipro_graph, _h );
+  g_string_free( _t, TRUE );
+}
+
+void menu_item_2d_print_x_clicked()
+{
+  if( ! is_it_number(gtk_entry_get_text(GTK_ENTRY(width_ed_1))) ){msg("Given height is not a number, decimal signs are not allowed as well"); return;}
+
+  GString*_t = g_string_new("");
+  gdouble _h = g_strtod( gtk_entry_get_text(GTK_ENTRY(width_ed_1)), NULL );
+  if( &monaco_graph ) print_x_of_given_width( &monaco_graph, _h );
+  g_string_free( _t, TRUE );
+}
+
 gboolean compare_doses( gdouble _d1, gdouble _d2, gdouble _sensitivity )
 {
   if( abs1( _d1 - _d2 ) < _sensitivity ) return TRUE;
@@ -1406,6 +1426,8 @@ gint main( gint argc, gchar **argv )
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_2d_normalize_to_max );
     menu_item_2d_normalize_to_center = gtk_menu_item_new_with_label( "Normalize to center" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_2d_normalize_to_center );
+    menu_item_2d_print_x = gtk_menu_item_new_with_label( "Print all x of given height" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_2d_print_x );
     menu_item_2d_clear = gtk_menu_item_new_with_label( "Clear" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_2d_clear );
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_monaco), menu_monaco );
@@ -1419,6 +1441,8 @@ gint main( gint argc, gchar **argv )
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_normalize_to_max );
     menu_item_1d_normalize_to_center = gtk_menu_item_new_with_label( "Normalize to center" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_normalize_to_center );
+    menu_item_1d_print_x = gtk_menu_item_new_with_label( "Print all x of given height" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_print_x );
     menu_item_1d_clear = gtk_menu_item_new_with_label( "Clear" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_clear );
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_omnipro), menu_omnipro );
@@ -1439,12 +1463,14 @@ gint main( gint argc, gchar **argv )
   g_signal_connect( menu_item_open_omnipro_imrt_plane, "activate", G_CALLBACK(open_omnipro_imrt_plane_clicked), NULL ); 
   g_signal_connect( menu_item_2d_normalize_to_max, "activate", G_CALLBACK(menu_item_2d_normalize_to_max_clicked), NULL ); 
   g_signal_connect( menu_item_2d_normalize_to_center, "activate", G_CALLBACK(menu_item_2d_normalize_to_center_clicked), NULL ); 
+  g_signal_connect( menu_item_2d_print_x, "activate", G_CALLBACK(menu_item_2d_print_x_clicked), NULL ); 
   g_signal_connect( menu_item_2d_clear, "activate", G_CALLBACK(menu_item_2d_clear_clicked), NULL ); 
 
   g_signal_connect( menu_item_open_omnipro_accept, "activate", G_CALLBACK(open_omnipro_accept_clicked), NULL ); 
   g_signal_connect( menu_item_open_1d_from_csv, "activate", G_CALLBACK(open_1d_from_csv_clicked), NULL ); 
   g_signal_connect( menu_item_1d_normalize_to_max, "activate", G_CALLBACK(menu_item_1d_normalize_to_max_clicked), NULL ); 
   g_signal_connect( menu_item_1d_normalize_to_center, "activate", G_CALLBACK(menu_item_1d_normalize_to_center_clicked), NULL ); 
+  g_signal_connect( menu_item_1d_print_x, "activate", G_CALLBACK(menu_item_1d_print_x_clicked), NULL ); 
   g_signal_connect( menu_item_1d_clear, "activate", G_CALLBACK(menu_item_1d_clear_clicked), NULL ); 
 
 

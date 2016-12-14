@@ -446,6 +446,21 @@ void open_omnipro_imrt_plane_clicked(  )
     for(_i=31; _i<n_of_y+31; _i++)
     {
       _temp_line_splitted = g_strsplit ( lines_splitted[_i], ",", G_MAXINT );
+      if( g_strv_length( _temp_line_splitted )-2 != (guint)n_of_x )
+      {//if line is too short or there is different separator than comma
+//printf("%d %d\n", g_strv_length( _temp_line_splitted ) , n_of_x, NULL );      
+        g_strfreev( _temp_line_splitted );
+        g_array_set_size( monaco_graph.g, 0 );
+        reset_graph_calculations( &monaco_graph );
+        are_calculations_current = FALSE;
+        gtk_widget_queue_draw ( monaco_da );
+        gtk_widget_queue_draw ( compare_da );
+        g_free( _filename );
+        g_free( _contents );
+        g_free( _length );
+        gtk_widget_destroy( _dialog );
+        return;
+      }
       for(_j=1; _j<n_of_x+1; _j++)
       {
         plane[(_i-31)*(n_of_x)+_j-1]=g_ascii_strtod(_temp_line_splitted[_j], NULL);
