@@ -236,7 +236,7 @@ void get_monaco_row_clicked(  ) // get row given as y
   g_array_set_size ( monaco_graph.g, 0 );
 
 
-  _x = -((n_of_x - 1)*0.05); // beggining of x axis in cm (not mm)
+  _x = -((n_of_x - 1)*0.5*monaco_step); // beggining of x axis in cm (not mm)
   for( _i=0; _i<n_of_x; _i++ )
   {
     _dose = plane[monaco_row_val*n_of_x+_i];
@@ -313,7 +313,7 @@ void get_monaco_column_clicked()
 
   if(gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(monaco_rb_1))) //we have xy column
   {
-    _x = -((n_of_y - 1)*0.05); // beggining ox y axis in cm (not mm)
+    _x = -((n_of_y - 1)*0.5*monaco_step); // beggining ox y axis in cm (not mm)
   }
   else //we are in some depth plane - column is depth dose
   {
@@ -427,7 +427,7 @@ void open_omnipro_imrt_plane_clicked(  )
     g_strfreev( _temp_line_splitted );
 
     // now is time to check if everything is ok
-    if( abs1(monaco_step - 0.1)>0.0001 || n_of_x%2 != 1 || n_of_y%2 != 1 )
+ /*   if(  abs1(monaco_step - 0.1)>0.0001 ||  n_of_x%2 != 1 || n_of_y%2 != 1 )
     {
       msg("For now the step of array must be set as 0.1cm;\n the plane must symmetric (in the middle must be 0,0),\n and the file must have an odd number of columns / rows.");
       g_strfreev( lines_splitted );
@@ -437,7 +437,7 @@ void open_omnipro_imrt_plane_clicked(  )
       g_free( _length );
       gtk_widget_destroy( _dialog );
       return;
-    }
+    }  */
 
     if( plane ) g_free( plane );
     plane = g_new0( gdouble, n_of_x*n_of_y*sizeof(gdouble)+1 );
