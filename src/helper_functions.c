@@ -107,7 +107,7 @@ gboolean print_x_of_given_width( graph*_g, gdouble _height )
 
   GString*_temp_s;
   _temp_s = g_string_new("");
-  g_string_append_printf( _temp_s, "There are not exactly two points with dose %2.2f.\n The number of points is: %d\n", _height, _tg->len, NULL );  
+  g_string_append_printf( _temp_s, "There are not exactly two points with dose %2.1f percents.\n The number of points is: %d\n", _height, _tg->len, NULL );  
   for( _i=0; _i<_tg->len; _i++ )g_string_append_printf( _temp_s, "%2.2f ",  g_array_index( _tg, point, _i ).x, NULL );
   msg(_temp_s->str);
   g_string_free( _temp_s, TRUE );
