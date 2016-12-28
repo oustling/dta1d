@@ -1414,7 +1414,23 @@ gint main( gint argc, gchar **argv )
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_file ), menu_item_exit );
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_file), menu_file );
 
-
+  menu_omnipro = gtk_menu_new();
+    menu_item_open_omnipro_accept = gtk_menu_item_new_with_label( "Open OmniproAccept csv file" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_open_omnipro_accept );
+    menu_item_open_1d_from_csv = gtk_menu_item_new_with_label( "Load 1d data from csv file" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_open_1d_from_csv );
+    menu_item_save_omnipro_graph = gtk_menu_item_new_with_label( "Export given 1D graph" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_save_omnipro_graph );
+    menu_item_1d_normalize_to_max = gtk_menu_item_new_with_label( "Normalize to Dmax" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_normalize_to_max );
+    menu_item_1d_normalize_to_center = gtk_menu_item_new_with_label( "Normalize to center" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_normalize_to_center );
+    menu_item_1d_print_x = gtk_menu_item_new_with_label( "Print all x of given height" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_print_x );
+    menu_item_1d_clear = gtk_menu_item_new_with_label( "Clear" );
+    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_clear );
+  gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_omnipro), menu_omnipro );
+ 
   menu_monaco = gtk_menu_new();
     menu_item_open_monaco_plane = gtk_menu_item_new_with_label( "Open Monaco plane file" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_open_monaco_plane );
@@ -1431,22 +1447,6 @@ gint main( gint argc, gchar **argv )
     menu_item_2d_clear = gtk_menu_item_new_with_label( "Clear" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_monaco ), menu_item_2d_clear );
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_monaco), menu_monaco );
-
-  menu_omnipro = gtk_menu_new();
-    menu_item_open_omnipro_accept = gtk_menu_item_new_with_label( "Open OmniproAccept csv file" );
-    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_open_omnipro_accept );
-    menu_item_open_1d_from_csv = gtk_menu_item_new_with_label( "Load 1d data from csv file" );
-    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_open_1d_from_csv );
-    menu_item_1d_normalize_to_max = gtk_menu_item_new_with_label( "Normalize to Dmax" );
-    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_normalize_to_max );
-    menu_item_1d_normalize_to_center = gtk_menu_item_new_with_label( "Normalize to center" );
-    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_normalize_to_center );
-    menu_item_1d_print_x = gtk_menu_item_new_with_label( "Print all x of given height" );
-    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_print_x );
-    menu_item_1d_clear = gtk_menu_item_new_with_label( "Clear" );
-    gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_1d_clear );
-  gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_omnipro), menu_omnipro );
- 
 
   gtk_widget_show_all( main_window );
 
@@ -1468,6 +1468,7 @@ gint main( gint argc, gchar **argv )
 
   g_signal_connect( menu_item_open_omnipro_accept, "activate", G_CALLBACK(open_omnipro_accept_clicked), NULL ); 
   g_signal_connect( menu_item_open_1d_from_csv, "activate", G_CALLBACK(open_1d_from_csv_clicked), NULL ); 
+  g_signal_connect( menu_item_save_omnipro_graph, "activate", G_CALLBACK(save_omnipro_graph_clicked), NULL ); 
   g_signal_connect( menu_item_1d_normalize_to_max, "activate", G_CALLBACK(menu_item_1d_normalize_to_max_clicked), NULL ); 
   g_signal_connect( menu_item_1d_normalize_to_center, "activate", G_CALLBACK(menu_item_1d_normalize_to_center_clicked), NULL ); 
   g_signal_connect( menu_item_1d_print_x, "activate", G_CALLBACK(menu_item_1d_print_x_clicked), NULL ); 

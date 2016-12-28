@@ -165,7 +165,7 @@ void save_monaco_graph_clicked(  )
                             (g_array_index(monaco_graph.g,point,_i)).dose, NULL);
 
 
-  _dialog = gtk_file_chooser_dialog_new ("Choose file to open",
+  _dialog = gtk_file_chooser_dialog_new ("Choose file to export",
 				      GTK_WINDOW(main_window),
 				      GTK_FILE_CHOOSER_ACTION_SAVE,
 				      "_Cancel", GTK_RESPONSE_CANCEL,

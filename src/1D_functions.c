@@ -1,3 +1,8 @@
+//-------------------------------------------------------------------//
+// 1D opening and manipulating functions 
+//-------------------------------------------------------------------//
+
+
 void open_omnipro_accept_clicked(  )
 {
   GtkWidget *_dialog;
@@ -180,7 +185,7 @@ void open_1d_from_csv_clicked(  )
       g_array_append_val( omnipro_graph.g, _tp );
     }
     normalize_graph( omnipro_graph, NORM_TO_CENTER );
-    calculate_fwhm( &omnipro_graph );
+    calculate_width( &omnipro_graph, 50 );
     are_calculations_current = FALSE;
     gtk_widget_queue_draw ( omnipro_da );
     gtk_widget_hide( omnipro_la_1 );
@@ -275,12 +280,71 @@ void get_omnipro_dataset_clicked()
 
   g_string_free( _temp_text, TRUE );
 
-  calculate_fwhm( &omnipro_graph );
+  calculate_width( &omnipro_graph, 50 );
   gtk_widget_queue_draw ( omnipro_da );
   gtk_widget_queue_draw ( compare_da );
   are_calculations_current = FALSE;
 }
 //end of get_omnipro_dataset_clicked
+
+//-------------------------------------------------------------------//
+// Exporting graph as csv 
+//-------------------------------------------------------------------//
+void save_omnipro_graph_clicked(  )
+{
+  GString *_temp_text = NULL;
+  GtkWidget *_dialog;
+  gchar *_filename = NULL;
+  GString *_uri = NULL;
+  GtkFileChooser *_chooser;
+  GtkFileChooserAction _action = GTK_FILE_CHOOSER_ACTION_SAVE;
+
+  guint64 _i;
+
+
+//  get_monaco_row_clicked();
+  if( omnipro_graph.g->len == 0 )
+  {
+    msg("Please load something first");
+    return;
+  }
+
+  _temp_text = g_string_new ("");
+
+  for( _i=0; _i < omnipro_graph.g->len; _i++ )
+    g_string_append_printf( _temp_text, "%f, %f\n",
+                            (g_array_index(omnipro_graph.g,point,_i)).x,
+                            (g_array_index(omnipro_graph.g,point,_i)).dose, NULL);
+
+
+  _dialog = gtk_file_chooser_dialog_new ("Choose file to export",
+				      GTK_WINDOW(main_window),
+				      GTK_FILE_CHOOSER_ACTION_SAVE,
+				      "_Cancel", GTK_RESPONSE_CANCEL,
+				      "_Save", GTK_RESPONSE_ACCEPT,
+				      NULL);
+
+  gtk_file_chooser_set_action ( GTK_FILE_CHOOSER(_dialog), GTK_FILE_CHOOSER_ACTION_SAVE);
+  _chooser = GTK_FILE_CHOOSER (_dialog);
+
+  gtk_file_chooser_set_do_overwrite_confirmation (_chooser, TRUE);
+  gtk_file_chooser_set_current_name (_chooser, "Exported 1D graph.csv");
+  _uri = g_string_new( g_get_current_dir() );
+  g_string_append_printf( _uri, "/data" );
+  gtk_file_chooser_set_current_folder( GTK_FILE_CHOOSER(_dialog), _uri->str );
+  g_string_free( _uri, TRUE );
+
+
+  if (gtk_dialog_run (GTK_DIALOG (_dialog)) == GTK_RESPONSE_ACCEPT)
+    {
+      _filename = (gchar*)gtk_file_chooser_get_filename (_chooser);
+      g_file_set_contents (_filename, _temp_text->str, -1, NULL );
+    }
+
+  gtk_widget_destroy (_dialog);
+
+  if(_filename)g_free(_filename);
+}
 
 
 

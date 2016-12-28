@@ -91,6 +91,7 @@ GtkWidget *menu_item_1d_normalize_to_max;
 GtkWidget *menu_item_1d_normalize_to_center;
 GtkWidget *menu_item_1d_print_x;
 GtkWidget *menu_item_1d_clear;
+GtkWidget *menu_item_save_omnipro_graph;
 //end of menu
 
 GtkWidget *hhbox;
@@ -178,17 +179,18 @@ GArray *omnipro_sets_garray = NULL; // with omnipro_datasets
 
 // FUNCTIONS //
 
+/* 1D manipulating functions defined in 2D_functions.c */
+void open_omnipro_accept_clicked(  );
+void open_1d_from_csv_clicked(  );
+void get_omnipro_dataset_clicked(  );
+void save_omnipro_graph_clicked(  );
+
 /* 2D manipulating functions defined in 2D_functions.c */
 void open_monaco_plane_clicked(  );
 void save_monaco_graph_clicked(  );
 void get_monaco_row_clicked(  );
 void get_monaco_column_clicked(  );
 void open_omnipro_imrt_plane_clicked(  );
-
-/* 1D manipulating functions defined in 2D_functions.c */
-void open_omnipro_accept_clicked(  );
-void open_1d_from_csv_clicked(  );
-void get_omnipro_dataset_clicked(  );
 
 /* drawing functions */
 void draw_background( graph*_g, cairo_t *_cr, guint _width, guint _height, guint _x, guint _y );
