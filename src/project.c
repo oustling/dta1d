@@ -798,7 +798,7 @@ void normalize_graph( graph _g, guint _norm_type )
       else 
       {
         _point = g_array_index( _g.g, point, (guint)(_g.g->len * 0.5) );
-        _point_2 = g_array_index( _g.g, point, (guint)(_g.g->len * 0.5 + 1) );
+        _point_2 = g_array_index( _g.g, point, (guint)(_g.g->len * 0.5 - 1) );
         _temp = ( _point.dose + _point_2.dose ) * 0.5;
       }
     }
