@@ -87,6 +87,7 @@ void open_omnipro_accept_clicked(  )
 
         g_string_printf ( _temp_text, "%d. %s", n_of_csv_sets, csv_splitted[_i-1], NULL );
         gtk_combo_box_text_insert_text( GTK_COMBO_BOX_TEXT(omnipro_combo_box_text), -1, _temp_text->str );
+        gtk_combo_box_set_active (GTK_COMBO_BOX(omnipro_combo_box_text), 0 );
       }
 
     }

@@ -131,6 +131,9 @@ gdouble max_common_x( graph*_g1, graph*_g2 ){
     return MIN( max_x_from_garray( _g1->g ), max_x_from_garray( _g2->g ) );
 }
 
+//-------------------------------------------------------------------//
+// This is some weird function and should be replaced some how
+//-------------------------------------------------------------------//
 gint round1 (gdouble _a){
     return (gint)(_a < 0 ? (_a - 0.5) : (_a + 0.5));
 }
