@@ -1415,9 +1415,9 @@ gint main( gint argc, gchar **argv )
   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menu_item_file), menu_file );
 
   menu_omnipro = gtk_menu_new();
-    menu_item_open_omnipro_accept = gtk_menu_item_new_with_label( "Open OmniproAccept csv file" );
+    menu_item_open_omnipro_accept = gtk_menu_item_new_with_label( "Open OmniproAccept .csv file" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_open_omnipro_accept );
-    menu_item_open_1d_from_csv = gtk_menu_item_new_with_label( "Load 1d data from csv file" );
+    menu_item_open_1d_from_csv = gtk_menu_item_new_with_label( "Load 1d data from .csv file" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_open_1d_from_csv );
     menu_item_save_omnipro_graph = gtk_menu_item_new_with_label( "Export given 1D graph" );
     gtk_menu_shell_append( GTK_MENU_SHELL( menu_omnipro ), menu_item_save_omnipro_graph );
