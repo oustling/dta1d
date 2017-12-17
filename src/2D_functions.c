@@ -25,6 +25,10 @@ void open_monaco_plane_clicked(  )
 
   guint _i,_j;
 
+  GSettings *_gsettings = NULL;
+  _gsettings = g_settings_new ("org.gtk.Settings.FileChooser");
+  g_settings_set_boolean( _gsettings, "sort-directories-first", TRUE );
+
   _dialog = gtk_file_chooser_dialog_new ("Choose file to open",
 				      GTK_WINDOW(main_window),
 				      GTK_FILE_CHOOSER_ACTION_OPEN,
@@ -149,6 +153,9 @@ void save_monaco_graph_clicked(  )
 
   guint64 _i;
 
+  GSettings *_gsettings = NULL;
+  _gsettings = g_settings_new ("org.gtk.Settings.FileChooser");
+  g_settings_set_boolean( _gsettings, "sort-directories-first", TRUE );
 
 //  get_monaco_row_clicked();
   if( monaco_graph.g->len == 0 )
@@ -377,6 +384,10 @@ void open_omnipro_imrt_plane_clicked(  )
 
   gchar **_temp_line_splitted = NULL;
   guint _i,_j;
+
+  GSettings *_gsettings = NULL;
+  _gsettings = g_settings_new ("org.gtk.Settings.FileChooser");
+  g_settings_set_boolean( _gsettings, "sort-directories-first", TRUE );
 
   _dialog = gtk_file_chooser_dialog_new ("Choose file to open",
 				      GTK_WINDOW(main_window),

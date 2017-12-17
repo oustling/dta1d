@@ -23,6 +23,10 @@ void open_omnipro_accept_clicked(  )
   guint _temp_first_row;
   omnipro_dataset _prev_omnipro_dataset;
 
+  GSettings *_gsettings = NULL;
+  _gsettings = g_settings_new ("org.gtk.Settings.FileChooser");
+  g_settings_set_boolean( _gsettings, "sort-directories-first", TRUE );
+
   _dialog = gtk_file_chooser_dialog_new ("Choose file to open",
 				      GTK_WINDOW(main_window),
 				      GTK_FILE_CHOOSER_ACTION_OPEN,
@@ -34,6 +38,7 @@ void open_omnipro_accept_clicked(  )
   g_string_append_printf( _uri, "/data" );
   gtk_file_chooser_set_current_folder( GTK_FILE_CHOOSER(_dialog), _uri->str );
   g_string_free( _uri, TRUE );
+ 
 
   if (gtk_dialog_run (GTK_DIALOG (_dialog)) == GTK_RESPONSE_ACCEPT)
   {
@@ -139,6 +144,10 @@ void open_1d_from_csv_clicked(  )
 
   guint _i;
   point _tp;
+
+  GSettings *_gsettings = NULL;
+  _gsettings = g_settings_new ("org.gtk.Settings.FileChooser");
+  g_settings_set_boolean( _gsettings, "sort-directories-first", TRUE );
 
   _dialog = gtk_file_chooser_dialog_new ("Choose file to open",
 				      GTK_WINDOW(main_window),
@@ -301,6 +310,9 @@ void save_omnipro_graph_clicked(  )
 
   guint64 _i;
 
+  GSettings *_gsettings = NULL;
+  _gsettings = g_settings_new ("org.gtk.Settings.FileChooser");
+  g_settings_set_boolean( _gsettings, "sort-directories-first", TRUE );
 
 //  get_monaco_row_clicked();
   if( omnipro_graph.g->len == 0 )
